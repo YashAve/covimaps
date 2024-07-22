@@ -33,7 +33,7 @@ interface APIService {
     fun getCovidData(): Call<JsonObject>
 
     @GET("geocode/json")
-    fun getGeocodeResponse(
+    suspend fun getGeocodeResponse(
         @retrofit2.http.Query("address") address: String,
         @retrofit2.http.Query("key") key: String
     ): CovidGeocodes

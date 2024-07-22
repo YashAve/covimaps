@@ -3,7 +3,6 @@ package com.covid.covimaps.data.model.remote
 import com.google.gson.annotations.SerializedName
 
 const val GEOCODE_URL = "https://maps.googleapis.com/maps/api/"
-const val GEOCODE_API_KEY = ""
 
 data class CovidGeocodes(
     @SerializedName("results") val results: List<Result>,

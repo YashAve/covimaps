@@ -5,10 +5,11 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.covid.covimaps.BuildConfig
 import com.covid.covimaps.data.model.local.room.CovidLocation
 import com.covid.covimaps.data.model.remote.CovidDataUiState
 import com.covid.covimaps.data.model.remote.DistrictUiState
-import com.covid.covimaps.data.model.remote.GEOCODE_API_KEY
+import com.covid.covimaps.data.model.remote.GEOCODE_URL
 import com.covid.covimaps.data.model.remote.Stats
 import com.covid.covimaps.data.model.remote.statesMapping
 import com.covid.covimaps.data.repository.local.DatabaseProvider
@@ -20,28 +21,19 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Response
 import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
 
 private const val TAG = "MainViewModel"
 
-suspend fun insertDatabase(covidDataUiState: CovidDataUiState, context: Context) {
+suspend fun insertDatabase(covidLocation: CovidLocation, context: Context) {
     withContext(Dispatchers.IO) {
-        val latitude = 1.1
-        val longitude = 1.1
-        covidDataUiState.districts.forEach {
-            if (it.name != "Unknown") {
-                DatabaseProvider.getDatabase(context).covidLocationDao().insertAll(
-                    CovidLocation(
-                        state = covidDataUiState.state,
-                        district = it.name,
-                        latitude = latitude,
-                        longitude = longitude
-                    )
-                )
-            }
+        launch {
+            DatabaseProvider.getDatabase(context).covidLocationDao().insertAll(covidLocation)
         }
     }
 }
@@ -60,6 +52,9 @@ class MainViewModel @Inject constructor(private val retrofit: Retrofit) : ViewMo
     suspend fun getCovidDataUiState() =
         viewModelScope.async { createData() }.await()
 
+    suspend fun getLocations() =
+        viewModelScope.async { getCovidGeocode() }.await()
+
     private suspend fun covidResponse() {
         withContext(Dispatchers.IO) {
             val service = retrofit.create(APIService::class.java)
@@ -74,17 +69,23 @@ class MainViewModel @Inject constructor(private val retrofit: Retrofit) : ViewMo
 
     private suspend fun getCovidGeocode() =
         withContext(Dispatchers.IO) {
-            val service = retrofit.create(APIService::class.java)
+            val geocodeRetrofit = Retrofit
+                .Builder()
+                .baseUrl(GEOCODE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+            val service = geocodeRetrofit.create(APIService::class.java)
             val requests: MutableList<Deferred<CovidLocation?>> = mutableListOf()
-            covidDataUiStates.forEach { state ->
+            covidDataUiStates.subList(0, 1).forEach { state ->
                 state.districts.forEach {
                     requests.add(async {
                         var covidLocation: CovidLocation? = null
                         try {
-                            val response = service.getGeocodeResponse("${it.name},+${state.state}", GEOCODE_API_KEY)
+                            val response = service.getGeocodeResponse("${it.name},+${state.state}", BuildConfig.MAPS_API_KEY)
                             val latitude = response.results[0].geometry.location.lat
                             val longitude = response.results[0].geometry.location.lng
                             covidLocation = CovidLocation(state = state.state, district = it.name, latitude = latitude, longitude = longitude)
+                            Log.d(TAG, "getCovidGeocode: $covidLocation")
                         } catch (e: Exception) {
                             Log.e(TAG, "getCovidGeocode: ${e.message}")
                         }
