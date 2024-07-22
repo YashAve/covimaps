@@ -32,13 +32,13 @@ import javax.inject.Inject
 private const val TAG = "MainViewModel"
 
 interface OnDataReadyCallback {
-    fun onDataReady(coordinates: List<LatLng>)
+    fun onDataReady(status: String = "incomplete")
 }
 
-suspend fun insertDatabase(covidLocation: CovidLocation, context: Context) {
+suspend fun insertDatabase(covidLocations: Array<CovidLocation>, context: Context) {
     withContext(Dispatchers.IO) {
         launch {
-            DatabaseProvider.getDatabase(context).covidLocationDao().insertAll(covidLocation)
+            DatabaseProvider.getDatabase(context).covidLocationDao().insertAll(*covidLocations)
         }
     }
 }
@@ -48,26 +48,25 @@ suspend fun retrieveLocations(context: Context) =
         DatabaseProvider.getDatabase(context).covidLocationDao().getCovidLocations()
     }
 
+suspend fun getLocationsCount(context: Context) =
+    withContext(Dispatchers.IO) {
+        DatabaseProvider.getDatabase(context).covidLocationDao().getCount()
+    }
+
 @HiltViewModel
 class MainViewModel @Inject constructor(private val retrofit: Retrofit) : ViewModel() {
 
     private lateinit var json: Response<JsonObject>
-    private lateinit var covidDataUiStates: MutableList<CovidDataUiState>
+    lateinit var covidDataUiStates: MutableList<CovidDataUiState>
     var coordinates: MutableList<LatLng> = mutableListOf()
+    var covidLocations: MutableList<CovidLocation> = mutableListOf()
 
     suspend fun getCovidDataUiState() =
         viewModelScope.async { createData() }.await()
 
     suspend fun getLocations(onDataReadyCallback: OnDataReadyCallback) {
-        viewModelScope.async { getCovidGeocode() }.await().forEach {
-            if (it != null) coordinates.add(
-                LatLng(
-                    it.latitude,
-                    it.longitude
-                )
-            )
-        }
-        onDataReadyCallback.onDataReady(coordinates)
+        viewModelScope.async { getCovidGeocode() }.await()
+        onDataReadyCallback.onDataReady("complete")
     }
 
     private suspend fun covidResponse() {
@@ -91,15 +90,33 @@ class MainViewModel @Inject constructor(private val retrofit: Retrofit) : ViewMo
                 .build()
             val service = geocodeRetrofit.create(APIService::class.java)
             val requests: MutableList<Deferred<CovidLocation?>> = mutableListOf()
-            covidDataUiStates.subList(0, 1).forEach { state ->
+            covidDataUiStates.subList(0, 3).forEach { state ->
                 state.districts.forEach {
                     requests.add(async {
                         var covidLocation: CovidLocation? = null
                         try {
-                            val response = service.getGeocodeResponse("${it.name},+${state.state}", BuildConfig.MAPS_API_KEY)
+                            val response = service.getGeocodeResponse(
+                                "${it.name},+${state.state}",
+                                BuildConfig.MAPS_API_KEY
+                            )
                             val latitude = response.results[0].geometry.location.lat
                             val longitude = response.results[0].geometry.location.lng
-                            covidLocation = CovidLocation(state = state.state, district = it.name, latitude = latitude, longitude = longitude)
+                            it.coordinates = LatLng(latitude, longitude)
+                            covidLocation = CovidLocation(
+                                state = state.state,
+                                district = it.name,
+                                latitude = latitude,
+                                longitude = longitude,
+                                totalDeceased = state.total?.deceased ?: 0,
+                                totalRecovered = state.total?.recovered ?: 0,
+                                totalCovishields = state.total?.vaccinated1 ?: 0,
+                                totalCovaxin = state.total?.vaccinated2 ?: 0,
+                                deceased = it.stats["total"]?.deceased ?: 0,
+                                recovered = it.stats["total"]?.recovered ?: 0,
+                                covishields = it.stats["total"]?.vaccinated1 ?: 0,
+                                covaxin = it.stats["total"]?.vaccinated2 ?: 0
+                            )
+                            covidLocations.add(covidLocation)
                             Log.d(TAG, "getCovidGeocode: $covidLocation")
                         } catch (e: Exception) {
                             Log.e(TAG, "getCovidGeocode: ${e.message}")

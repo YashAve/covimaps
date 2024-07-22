@@ -12,4 +12,7 @@ interface CovidLocationDoa {
 
     @Query("SELECT * FROM covidlocation")
     fun getCovidLocations(): List<CovidLocation>
+
+    @Query("SELECT COUNT(*) FROM covidlocation")
+    fun getCount(): Int
 }

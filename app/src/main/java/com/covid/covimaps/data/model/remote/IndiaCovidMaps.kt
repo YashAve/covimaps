@@ -1,5 +1,7 @@
 package com.covid.covimaps.data.model.remote
 
+import com.google.android.gms.maps.model.LatLng
+
 const val COVID_DATA_URL: String = "https://data.covid19india.org/v4/min/"
 
 val statesMapping = mapOf(
@@ -50,14 +52,15 @@ data class CovidDataUiState(
 
 data class DistrictUiState(
     val name: String,
-    val stats: Map<String, Stats>
+    val stats: Map<String, Stats>,
+    var coordinates: LatLng? = null
 )
 
 data class Stats(
-    val confirmed: Int = -1,
-    val deceased: Int = -1,
-    val recovered: Int = -1,
-    val tested: Int = -1,
-    val vaccinated1: Int = -1,
-    val vaccinated2: Int = -1
+    val confirmed: Int = 0,
+    val deceased: Int = 0,
+    val recovered: Int = 0,
+    val tested: Int = 0,
+    val vaccinated1: Int = 0,
+    val vaccinated2: Int = 0
 )
