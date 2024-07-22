@@ -87,6 +87,10 @@ dependencies {
 }
 
 dependencies {
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+}
+
+dependencies {
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
 }

@@ -14,6 +14,7 @@ import com.covid.covimaps.data.model.remote.Stats
 import com.covid.covimaps.data.model.remote.statesMapping
 import com.covid.covimaps.data.repository.local.DatabaseProvider
 import com.covid.covimaps.data.repository.remote.APIService
+import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,6 +30,10 @@ import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
 
 private const val TAG = "MainViewModel"
+
+interface OnDataReadyCallback {
+    fun onDataReady(coordinates: List<LatLng>)
+}
 
 suspend fun insertDatabase(covidLocation: CovidLocation, context: Context) {
     withContext(Dispatchers.IO) {
@@ -48,12 +53,22 @@ class MainViewModel @Inject constructor(private val retrofit: Retrofit) : ViewMo
 
     private lateinit var json: Response<JsonObject>
     private lateinit var covidDataUiStates: MutableList<CovidDataUiState>
+    var coordinates: MutableList<LatLng> = mutableListOf()
 
     suspend fun getCovidDataUiState() =
         viewModelScope.async { createData() }.await()
 
-    suspend fun getLocations() =
-        viewModelScope.async { getCovidGeocode() }.await()
+    suspend fun getLocations(onDataReadyCallback: OnDataReadyCallback) {
+        viewModelScope.async { getCovidGeocode() }.await().forEach {
+            if (it != null) coordinates.add(
+                LatLng(
+                    it.latitude,
+                    it.longitude
+                )
+            )
+        }
+        onDataReadyCallback.onDataReady(coordinates)
+    }
 
     private suspend fun covidResponse() {
         withContext(Dispatchers.IO) {
