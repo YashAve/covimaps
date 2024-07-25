@@ -2,6 +2,7 @@ package com.covid.covimaps.data.repository.remote
 
 import com.covid.covimaps.data.model.remote.COVID_DATA_URL
 import com.covid.covimaps.data.model.remote.CovidGeocodes
+import com.google.firebase.auth.FirebaseAuth
 import com.google.gson.JsonObject
 import dagger.Module
 import dagger.Provides
@@ -15,7 +16,7 @@ import retrofit2.http.GET
 
 @Module
 @InstallIn(SingletonComponent::class)
-class RetrofitModule {
+class AppModule {
 
     @Provides
     fun provideRetrofit(): Retrofit {
@@ -25,6 +26,10 @@ class RetrofitModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
+
+    @Provides
+    fun provideFirebaseAuth(): FirebaseAuth =
+        FirebaseAuth.getInstance()
 }
 
 interface APIService {

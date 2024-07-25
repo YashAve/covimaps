@@ -60,6 +60,7 @@ class MainViewModel @Inject constructor(private val retrofit: Retrofit) : ViewMo
     lateinit var covidDataUiStates: MutableList<CovidDataUiState>
     var coordinates: MutableList<LatLng> = mutableListOf()
     var covidLocations: MutableList<CovidLocation> = mutableListOf()
+    lateinit var currentCovidLocation: CovidLocation
 
     suspend fun getCovidDataUiState() =
         viewModelScope.async { createData() }.await()
@@ -90,7 +91,8 @@ class MainViewModel @Inject constructor(private val retrofit: Retrofit) : ViewMo
                 .build()
             val service = geocodeRetrofit.create(APIService::class.java)
             val requests: MutableList<Deferred<CovidLocation?>> = mutableListOf()
-            covidDataUiStates.subList(0, 3).forEach { state ->
+            //val offset = kotlin.random.Random.nextInt(0, 32)
+            covidDataUiStates.subList(0, 1).forEach { state ->
                 state.districts.forEach {
                     requests.add(async {
                         var covidLocation: CovidLocation? = null

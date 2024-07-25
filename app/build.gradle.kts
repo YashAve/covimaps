@@ -4,6 +4,7 @@ plugins {
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -107,6 +108,15 @@ dependencies {
     implementation(libs.play.services.maps)
     implementation (libs.maps.compose)
     implementation(libs.maps.compose.widgets)
+}
+
+dependencies {
+    implementation(libs.androidx.datastore.preferences)
+}
+
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+    implementation("com.google.firebase:firebase-auth")
 }
 
 dependencies {

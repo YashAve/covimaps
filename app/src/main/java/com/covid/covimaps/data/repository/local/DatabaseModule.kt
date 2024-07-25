@@ -3,7 +3,7 @@ package com.covid.covimaps.data.repository.local
 import android.content.Context
 import androidx.room.Room
 import com.covid.covimaps.data.model.local.room.CovidDatabase
-import com.covid.covimaps.data.model.remote.CovidDataUiState
+import com.covid.covimaps.data.model.local.room.CovidLocation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -19,38 +19,38 @@ object DatabaseProvider {
     }
 }
 
-suspend fun List<CovidDataUiState>.totalDeaths() =
+suspend fun List<CovidLocation>.totalDeaths() =
     withContext(Dispatchers.Default) {
         var total = 0
-        forEach { state ->
-            total += state.total?.deceased ?: 0
+        forEach { it ->
+            total += it.totalDeceased
         }
         total
     }
 
-suspend fun List<CovidDataUiState>.totalRecovered() =
+suspend fun List<CovidLocation>.totalRecovered() =
     withContext(Dispatchers.Default) {
         var total = 0
-        forEach { state ->
-            total += state.total?.recovered ?: 0
+        forEach {
+            total += it.totalRecovered
         }
         total
     }
 
-suspend fun List<CovidDataUiState>.coviShields() =
+suspend fun List<CovidLocation>.coviShields() =
     withContext(Dispatchers.Default) {
         var total = 0
-        forEach { state ->
-            total += state.total?.vaccinated1 ?: 0
+        forEach {
+            total += it.totalCovishields
         }
         total
     }
 
-suspend fun List<CovidDataUiState>.covaxin() =
+suspend fun List<CovidLocation>.covaxin() =
     withContext(Dispatchers.Default) {
         var total = 0
-        forEach { state ->
-            total += state.total?.vaccinated2 ?: 0
+        forEach {
+            total += it.covaxin
         }
         total
     }
