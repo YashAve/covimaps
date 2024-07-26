@@ -43,6 +43,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        viewBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -54,7 +55,7 @@ android {
     }
     secrets {
         // Optionally specify a different file name containing your secrets.
-        // The plugin defaults to "local.properties"
+        // The plugin defaults to "local.prfindViewById(R.id.main)operties"
         propertiesFileName = "secrets.properties"
 
         // A properties file containing default secret values. This file can be
@@ -70,6 +71,7 @@ android {
 
 dependencies {
 
+    /*basic and compose related*/
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -85,41 +87,39 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-}
-
-dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-}
 
-dependencies {
+    /*android views related*/
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.constraintlayout)
+    implementation("com.google.android.material:material:1.12.0")
+
+    /*retrofit related*/
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
-}
 
-dependencies {
+    /*room related*/
     implementation(libs.androidx.room.runtime)
     annotationProcessor(libs.androidx.room.compiler)
     kapt(libs.androidx.room.room.compiler)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.paging)
-}
 
-dependencies {
+    /*maps related*/
     implementation(libs.play.services.maps)
     implementation (libs.maps.compose)
     implementation(libs.maps.compose.widgets)
-}
 
-dependencies {
+    /*data store related*/
     implementation(libs.androidx.datastore.preferences)
-}
 
-dependencies {
+    /*firebase related*/
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation("com.google.firebase:firebase-auth")
-}
 
-dependencies {
+    /*dependency injection Hilt related*/
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
 }
