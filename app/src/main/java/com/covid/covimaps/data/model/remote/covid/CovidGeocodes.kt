@@ -1,4 +1,4 @@
-package com.covid.covimaps.data.model.remote
+package com.covid.covimaps.data.model.remote.covid
 
 import com.google.gson.annotations.SerializedName
 

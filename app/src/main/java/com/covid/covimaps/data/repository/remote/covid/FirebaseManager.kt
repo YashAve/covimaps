@@ -1,6 +1,7 @@
-package com.covid.covimaps.data.repository.remote
+package com.covid.covimaps.data.repository.remote.covid
 
-import android.app.Activity
+import android.util.Log
+import androidx.activity.ComponentActivity
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
@@ -8,23 +9,23 @@ import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
 import java.util.concurrent.TimeUnit
 
+private const val TAG = "FirebaseManager"
 object FirebaseInstances {
     val firebaseAuth = FirebaseAuth.getInstance()
 }
 
-class FirebaseManager(private val context: Activity) {
+class FirebaseManager(private val context: ComponentActivity) {
 
     var flag: Boolean = false
-        private set
 
     private val phoneAuthCallbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
 
         override fun onVerificationCompleted(phoneAuthCredential: PhoneAuthCredential) {
-
+            Log.d(TAG, "onVerificationCompleted: sms code is received ${phoneAuthCredential.smsCode}")
         }
 
         override fun onVerificationFailed(firebaseException: FirebaseException) {
-            TODO("Not yet implemented")
+            Log.d(TAG, "onVerificationFailed: ${firebaseException.message}")
         }
 
     }

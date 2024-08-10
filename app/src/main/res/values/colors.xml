@@ -11,4 +11,6 @@
     <color name="very_light_green">#FFCDEBBC</color>
     <color name="light_green">#FF8DC26F</color>
     <color name="green">#FF76B852</color>
+
+    <color name="edittext_outlined_focused">#C5CFDE</color>
 </resources>

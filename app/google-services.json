@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "25130857407",
+    "project_id": "covimaps-ca01f",
+    "storage_bucket": "covimaps-ca01f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:25130857407:android:ac42ad6d7603a25d03270a",
+        "android_client_info": {
+          "package_name": "com.covid.covimaps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmn5K383ntOILFggsKUypiCZCuwWQ9SZo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

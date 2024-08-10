@@ -7,11 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.covid.covimaps.BuildConfig
 import com.covid.covimaps.data.model.local.room.CovidLocation
-import com.covid.covimaps.data.model.remote.CovidDataUiState
-import com.covid.covimaps.data.model.remote.DistrictUiState
-import com.covid.covimaps.data.model.remote.GEOCODE_URL
-import com.covid.covimaps.data.model.remote.Stats
-import com.covid.covimaps.data.model.remote.statesMapping
+import com.covid.covimaps.data.model.remote.covid.CovidDataUiState
+import com.covid.covimaps.data.model.remote.covid.DistrictUiState
+import com.covid.covimaps.data.model.remote.covid.Stats
+import com.covid.covimaps.data.model.remote.covid.statesMapping
+import com.covid.covimaps.data.repository.CovidBaseUrl
+import com.covid.covimaps.data.repository.GeoCodeBaseUrl
 import com.covid.covimaps.data.repository.local.DatabaseProvider
 import com.covid.covimaps.data.repository.remote.APIService
 import com.google.android.gms.maps.model.LatLng
@@ -26,7 +27,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Response
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
 
 private const val TAG = "MainViewModel"
@@ -54,25 +54,27 @@ suspend fun getLocationsCount(context: Context) =
     }
 
 @HiltViewModel
-class MainViewModel @Inject constructor(private val retrofit: Retrofit) : ViewModel() {
+class MainViewModel @Inject constructor(@CovidBaseUrl private val retrofitCovid: Retrofit, @GeoCodeBaseUrl private val retrofitGeoCode: Retrofit) : ViewModel() {
 
     private lateinit var json: Response<JsonObject>
     lateinit var covidDataUiStates: MutableList<CovidDataUiState>
     var coordinates: MutableList<LatLng> = mutableListOf()
     var covidLocations: MutableList<CovidLocation> = mutableListOf()
     lateinit var currentCovidLocation: CovidLocation
+    var loading = true
 
     suspend fun getCovidDataUiState() =
         viewModelScope.async { createData() }.await()
 
     suspend fun getLocations(onDataReadyCallback: OnDataReadyCallback) {
         viewModelScope.async { getCovidGeocode() }.await()
+        Log.d(TAG, "covid locations size: ${covidLocations.size}")
         onDataReadyCallback.onDataReady("complete")
     }
 
     private suspend fun covidResponse() {
         withContext(Dispatchers.IO) {
-            val service = retrofit.create(APIService::class.java)
+            val service = retrofitCovid.create(APIService::class.java)
             try {
                 val response = service.getCovidData()
                 json = response.execute()
@@ -84,12 +86,7 @@ class MainViewModel @Inject constructor(private val retrofit: Retrofit) : ViewMo
 
     private suspend fun getCovidGeocode() =
         withContext(Dispatchers.IO) {
-            val geocodeRetrofit = Retrofit
-                .Builder()
-                .baseUrl(GEOCODE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-            val service = geocodeRetrofit.create(APIService::class.java)
+            val service = retrofitGeoCode.create(APIService::class.java)
             val requests: MutableList<Deferred<CovidLocation?>> = mutableListOf()
             //val offset = kotlin.random.Random.nextInt(0, 32)
             covidDataUiStates.subList(0, 1).forEach { state ->

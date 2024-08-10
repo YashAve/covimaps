@@ -3,4 +3,6 @@
     <string name="statistics_visual_fragment">Visual</string>
     <string name="statistics_data_fragment">Data</string>
     <string name="title_activity_statistics">StatisticsActivity</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="title_activity_profile">ProfileActivity</string>
 </resources>

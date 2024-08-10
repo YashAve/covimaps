@@ -88,6 +88,10 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.ui.text.google.fonts)
+
+    implementation(libs.androidx.material.icons.core)
+    implementation(libs.androidx.material.icons.extended)
 
     /*android views related*/
     implementation(libs.androidx.appcompat)
@@ -118,6 +122,16 @@ dependencies {
     /*firebase related*/
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation("com.google.firebase:firebase-auth")
+
+    /*fragments related*/
+    implementation(libs.androidx.fragment.ktx)
+    
+    /*phone number hint*/
+    implementation(libs.play.services.auth)
+
+    /*coil*/
+    implementation(libs.coil)
+    implementation(libs.coil.kt.coil.compose)
 
     /*dependency injection Hilt related*/
     implementation(libs.hilt.android)

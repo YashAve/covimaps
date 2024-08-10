@@ -1,8 +1,11 @@
 [versions]
 agp = "8.4.2"
+coil = "2.7.0"
+coilCompose = "2.7.0"
 converterGson = "2.9.0"
 countryCodePicker = "0.1.1"
 datastorePreferences = "1.1.1"
+fragmentKtx = "1.8.2"
 hiltAndroid = "2.46.1"
 kotlin = "1.9.0"
 coreKtx = "1.13.1"
@@ -15,8 +18,11 @@ activityCompose = "1.9.0"
 composeBom = "2023.08.00"
 mapsCompose = "6.1.0"
 mapsComposeWidgets = "6.1.0"
+materialIconsCore = "1.6.8"
+materialIconsExtended = "1.6.8"
 ohteepee = "1.0.3"
 places = "3.5.0"
+playServicesAuth = "21.2.0"
 playServicesMaps = "19.0.0"
 retrofit = "2.9.0"
 roomRuntime = "2.6.1"
@@ -26,16 +32,23 @@ appcompat = "1.7.0"
 material = "1.12.0"
 activity = "1.9.1"
 constraintlayout = "2.1.4"
+uiTextGoogleFonts = "1.6.8"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtx" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
+androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
+androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core", version.ref = "materialIconsCore" }
 androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "roomRuntime" }
 androidx-room-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRuntime" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomCompiler" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomRuntime" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
+androidx-ui-text-google-fonts = { module = "androidx.compose.ui:ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }
+coil = { module = "io.coil-kt:coil", version.ref = "coil" }
+coil-kt-coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 country-code-picker = { module = "com.github.codewith-fun:Country-Code-picker", version.ref = "countryCodePicker" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
@@ -58,6 +71,7 @@ maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = 
 maps-compose-widgets = { module = "com.google.maps.android:maps-compose-widgets", version.ref = "mapsComposeWidgets" }
 ohteepee = { module = "com.github.composeuisuite:ohteepee", version.ref = "ohteepee" }
 places = { module = "com.google.android.libraries.places:places", version.ref = "places" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 secrets-gradle-plugin = { module = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }

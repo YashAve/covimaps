@@ -6,43 +6,42 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.covid.covimaps.R
 import com.covid.covimaps.data.model.local.room.CovidLocation
-import com.covid.covimaps.data.model.remote.disclaimer
+import com.covid.covimaps.data.model.remote.covid.disclaimer
+import com.covid.covimaps.ui.theme.DarkGreen
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun MapsModalContent(
@@ -120,119 +119,128 @@ fun MapsModalContent(
 @Composable
 fun DisclaimerDialog(
     modifier: Modifier = Modifier,
+    readOutLoud: (Boolean, String) -> Unit = { _, _ -> },
     onAgree: () -> Unit = {},
     onDisagree: () -> Unit = {}
 ) {
     val verticalScroll = rememberScrollState()
+    var mikeEnabled by rememberSaveable { mutableStateOf(false) }
+    val text by rememberSaveable { mutableStateOf(StringBuilder()) }
+    val stop = {
+        readOutLoud(false, "")
+        mikeEnabled = false
+    }
+
     AlertDialog(
-        onDismissRequest = { },
-        confirmButton = { Text(text = "Agree", modifier = Modifier.clickable { onAgree() }) },
+        onDismissRequest = {
+            stop()
+            onDisagree()
+        },
+        confirmButton = {
+            Text(text = "Agree", modifier = Modifier.clickable {
+                stop()
+                onAgree()
+            })
+        },
         dismissButton = {
             Text(
-                text = "Cancel"
+                text = "Cancel", modifier = Modifier.clickable {
+                    stop()
+                    onDisagree()
+                }
             )
         },
         title = {
-            Text(text = "Disclaimer")
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = "Disclaimer")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "Speak out loud")
+                    Icon(
+                        imageVector = if (!mikeEnabled) Icons.Default.Mic else Icons.Default.MicOff,
+                        contentDescription = "",
+                        modifier = Modifier.clickable {
+                            if (!mikeEnabled) {
+                                readOutLoud(true, text.toString())
+                                mikeEnabled = true
+                            } else stop()
+                        }
+                    )
+                }
+            }
         },
         text = {
             Column(modifier = Modifier.verticalScroll(verticalScroll)) {
                 disclaimer.forEach {
+                    text.append(it.key).append(it.value)
                     Column {
-                        Text(text = it.key, fontWeight = FontWeight.Bold, color = Color.Black)
-                        Text(text = it.value)
+                        Text(text = it.key, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(text = it.value, fontSize = 14.sp)
                     }
                 }
             }
         },
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxSize(),
         icon = {
             Icon(imageVector = Icons.Default.Warning, contentDescription = "Disclaimer")
         })
 }
 
 @Composable
-fun LoginScreen(modifier: Modifier = Modifier) {
-    var phone by rememberSaveable { mutableStateOf("") }
-    val label = "We will send you an One Time Password on this mobile number"
-    val particular = "One Time Password"
-    val annotatedString = buildAnnotatedString {
-        val start = label.indexOf(particular)
-        val end = particular.length
-        append(label.substring(0, start))
-        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-            append(label.substring(start, end))
+fun Loader(
+    modifier: Modifier = Modifier,
+    task: String = "Loading",
+    onLoading: (Boolean) -> Unit = {}
+) {
+    val scope = rememberCoroutineScope()
+    var loadingMessage by rememberSaveable { mutableStateOf("") }
+    var counter by rememberSaveable { mutableIntStateOf(0) }
+    var count by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        scope.launch {
+            while (count < 3) {
+                while (counter < 3) {
+                    loadingMessage = "${".".repeat(counter)}$task"
+                    delay(500)
+                    counter++
+                }
+                counter = 0
+                count++
+            }
+            onLoading(false)
         }
-        append(label.substring(end))
     }
 
-
-    Column(
-        modifier = modifier
-            .fillMaxHeight()
-            .fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Bottom
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = DarkGreen,
+            contentColor = Color.White
+        ), modifier = modifier
     ) {
         Text(
-            text = annotatedString,
-            modifier = Modifier.padding(horizontal = 40.dp),
-            textAlign = TextAlign.Center
-        )
-        TextField(
-            value = phone,
-            onValueChange = {
-                if (it.length < 10) phone = it
-            },
-            placeholder = {
-                Text(text = "+91...", fontWeight = FontWeight.Bold)
-            },
-            textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold),
-            maxLines = 1,
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Phone),
+            text = loadingMessage,
+            fontSize = 17.sp,
             modifier = Modifier
-                .padding(start = 30.dp, end = 30.dp, top = 7.dp)
-                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 5.dp)
         )
-        FilledIconButton(
-            onClick = { },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 28.dp, vertical = 10.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 17.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Next",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowRight,
-                    contentDescription = "this button will take you to the OTP verification screen"
-                )
-            }
-        }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun MapsPreview() {
+private fun LoaderPreview() {
+    Loader()
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun MapsPreview() {
     MapsModalContent()
 }
 
 @Preview(showBackground = true)
 @Composable
-fun DisclaimerDialogPreview() {
+private fun DisclaimerDialogPreview() {
     DisclaimerDialog()
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen()
 }

@@ -29,15 +29,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.covid.covimaps.ui.theme.DarkOrange
+import com.covid.covimaps.ui.theme.DarkGreen
 
 @Composable
 fun DynamicTabSelector(
+    modifier: Modifier = Modifier,
     tabs: List<String>, // Can be 2 to 4 options
     selectedOption: Int = 0,
     containerColor: Color = Color(0xFFDFE6EE),
     tabColor: Color = Color.White,
-    selectedOptionColor: Color = DarkOrange,
+    selectedOptionColor: Color = DarkGreen,
     containerCornerRadius: Dp = 16.dp,
     tabCornerRadius: Dp = 12.dp,
     selectorHeight: Dp = 48.dp,

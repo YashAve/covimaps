@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<item
+    android:title="@string/statistics_visual_fragment"
+    android:icon="@drawable/navigation_icon"/>
+    <item
+        android:title="@string/statistics_data_fragment"
+        android:icon="@drawable/statistics_icon"/>
+</menu>
