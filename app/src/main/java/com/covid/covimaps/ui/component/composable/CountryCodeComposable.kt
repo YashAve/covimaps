@@ -1,6 +1,6 @@
 package com.covid.covimaps.ui.component.composable
 
-import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,12 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -36,18 +35,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.covid.covimaps.data.model.remote.covid.countrycode.CountryCodes
+import com.covid.covimaps.data.model.local.room.CountryCodeUiState
 import com.covid.covimaps.viewmodel.UserViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 
 private const val TAG = "CountryCodeComposable"
 private lateinit var showCountryCodes: (Boolean) -> Unit
@@ -63,8 +57,7 @@ fun CustomCountryCode(
     var geoCodesAvailable by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    val scrollState = rememberScrollState()
-    var countryCodes: MutableList<CountryCodes> = mutableListOf()
+    var countryCodes: MutableList<CountryCodeUiState> = mutableListOf()
 
     showCountryCodes = showCodes
 
@@ -72,7 +65,7 @@ fun CustomCountryCode(
 
     LaunchedEffect(Unit) {
         geoCodesAvailable = scope.async {
-            countryCodes = viewModel?.getDetails() ?: mutableListOf()
+            countryCodes = viewModel?.getDetails()?.toMutableList() ?: mutableListOf()
             true
         }.await()
     }
@@ -123,27 +116,25 @@ fun CustomCountryCode(
                                 .align(Alignment.CenterStart)
                         )
                     } else {
-                        Column(modifier = Modifier.verticalScroll(state = scrollState)) {
-                            countryCodes
-                                .filter { it.name?.common?.startsWith(value) ?: false }
-                                .forEach {
-                                    CountryCode(
-                                        countryCodes = it
-                                    ) { altSpelling, root, suffix ->
-                                        viewModel?.selectedCountry = altSpelling[0]
-                                        viewModel?.selectedCountryCode = "$root$suffix"
-                                    }
-                                    Spacer(
-                                        modifier = modifier
-                                            .height(0.3.dp)
-                                            .background(color = Color.LightGray)
-                                            .fillMaxWidth()
-                                    )
+                        LazyColumn {
+                            items(
+                                countryCodes
+                                    .filter { it.country.startsWith(value) }) {
+                                CountryCode(
+                                    countryCodeUiState = it
+                                ) { altSpelling, countryCode ->
+                                    viewModel?.selectedCountry = altSpelling
+                                    viewModel?.selectedCountryCode = countryCode
                                 }
+                                Spacer(
+                                    modifier = modifier
+                                        .height(0.3.dp)
+                                        .background(color = Color.LightGray)
+                                        .fillMaxWidth()
+                                )
+                            }
                         }
                     }
-                } else {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
             }
         }
@@ -153,65 +144,34 @@ fun CustomCountryCode(
 @Composable
 private fun CountryCode(
     modifier: Modifier = Modifier,
-    countryCodes: CountryCodes? = null,
-    selectCountry: (ArrayList<String>, String, String) -> Unit,
+    countryCodeUiState: CountryCodeUiState? = null,
+    selectCountry: (String, String) -> Unit,
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    var imageState by rememberSaveable { mutableStateOf<String?>(null) }
-    var isLoading by rememberSaveable { mutableStateOf(true) }
-
-    val imageUrl = countryCodes?.flags?.png
-    val altSpelling = countryCodes?.altSpellings ?: arrayListOf()
-    val suffix = countryCodes?.idd?.suffixes?.let {
-        if (it.size == 1) it[0] else ""
-    } ?: ""
-    val root = "${countryCodes?.idd?.root}"
-    val countryCode = "$root$suffix"
-
-    LaunchedEffect(imageUrl) {
-        coroutineScope.launch(Dispatchers.IO) {
-            imageState = try {
-                imageUrl
-            } catch (e: Exception) {
-                null
-            } finally {
-                isLoading = false
-            }
-        }
-    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp, horizontal = 7.dp)
             .clickable {
-                Log.d(TAG, "CountryCode: country code is selected")
-                selectCountry(altSpelling, root, suffix)
+                selectCountry(countryCodeUiState?.code!!, countryCodeUiState.countryCode)
                 showCountryCodes(false)
             },
         horizontalArrangement = Arrangement.Center
     ) {
-        imageState?.let {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(it)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "Loaded Image",
-                modifier = Modifier
-                    .size(32.dp)
-                    .weight(0.1f)
-            )
-        }
+        Image(
+            bitmap = countryCodeUiState?.flag!!, contentDescription = "", modifier = Modifier
+                .size(32.dp)
+                .weight(0.1f)
+        )
         Text(
-            text = "${countryCodes?.name?.common}",
+            text = countryCodeUiState.country,
             fontSize = 17.sp,
             modifier = Modifier
                 .padding(horizontal = 12.dp)
                 .weight(0.8f)
         )
         Text(
-            text = countryCode,
+            text = countryCodeUiState.countryCode,
             fontSize = 16.sp,
         )
     }

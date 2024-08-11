@@ -83,6 +83,7 @@ class LoginActivity : ComponentActivity() {
         }
 
         onFinish = { finish() }
+        
 
         firebaseManager = FirebaseManager(this)
         googlePlayServicesManager = GooglePlayServicesManager(this)

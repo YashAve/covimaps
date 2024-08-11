@@ -1,5 +1,8 @@
 package com.covid.covimaps.data.repository
 
+import android.content.Context
+import androidx.room.Room
+import com.covid.covimaps.data.model.local.room.LocalDatabase
 import com.covid.covimaps.data.model.remote.covid.COVID_DATA_URL
 import com.covid.covimaps.data.model.remote.covid.GEOCODE_URL
 import com.covid.covimaps.data.repository.remote.countrycode.COUNTRY_CODE_BASE_URL
@@ -7,6 +10,7 @@ import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -28,6 +32,11 @@ annotation class GeoCodeBaseUrl
 @Module
 @InstallIn(SingletonComponent::class)
 class AppModule {
+
+    @Provides
+    fun provideLocalDatabase(@ApplicationContext appContext: Context): LocalDatabase =
+        Room.databaseBuilder(appContext, LocalDatabase::class.java, "covid-database")
+            .build()
 
     @Provides
     @CovidBaseUrl

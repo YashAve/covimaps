@@ -127,7 +127,7 @@ fun DisclaimerDialog(
     var mikeEnabled by rememberSaveable { mutableStateOf(false) }
     val text by rememberSaveable { mutableStateOf(StringBuilder()) }
     val stop = {
-        readOutLoud(false, "")
+        readOutLoud(true, "")
         mikeEnabled = false
     }
 
@@ -162,7 +162,7 @@ fun DisclaimerDialog(
                         contentDescription = "",
                         modifier = Modifier.clickable {
                             if (!mikeEnabled) {
-                                readOutLoud(true, text.toString())
+                                readOutLoud(false, text.toString())
                                 mikeEnabled = true
                             } else stop()
                         }
@@ -173,7 +173,7 @@ fun DisclaimerDialog(
         text = {
             Column(modifier = Modifier.verticalScroll(verticalScroll)) {
                 disclaimer.forEach {
-                    text.append(it.key).append(it.value)
+                    text.append(it.value)
                     Column {
                         Text(text = it.key, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         Text(text = it.value, fontSize = 14.sp)

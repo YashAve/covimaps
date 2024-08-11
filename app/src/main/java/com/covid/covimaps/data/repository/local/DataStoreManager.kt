@@ -7,7 +7,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -15,6 +17,7 @@ class DataStoreManager(private val context: Context, var isAgree: Boolean = fals
     
     init {
         Log.d(TAG, "initialized: ")
+        isAgreedToDisclaimer()
     }
 
     companion object {
@@ -31,8 +34,10 @@ class DataStoreManager(private val context: Context, var isAgree: Boolean = fals
     }
 
     suspend fun agreeToDisclaimer() =
-        context.dataStore.edit {
-            it[AGREE] = true
-            isAgree = true
+        withContext(Dispatchers.IO) {
+            context.dataStore.edit {
+                it[AGREE] = true
+                isAgree = true
+            }
         }
 }

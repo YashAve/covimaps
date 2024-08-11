@@ -25,5 +25,5 @@ interface APIService {
     ): CovidGeocodes
 
     @GET("all")
-    suspend fun getCountryCodes(): List<CountryCodes>
+    suspend fun getCountryCodes(): MutableList<CountryCodes>
 }
