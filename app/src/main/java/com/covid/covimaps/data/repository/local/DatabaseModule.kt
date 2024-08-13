@@ -2,8 +2,8 @@ package com.covid.covimaps.data.repository.local
 
 import android.content.Context
 import androidx.room.Room
-import com.covid.covimaps.data.model.local.room.LocalDatabase
-import com.covid.covimaps.data.model.local.room.CovidLocation
+import com.covid.covimaps.data.model.room.CovidLocation
+import com.covid.covimaps.data.model.room.LocalDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

@@ -1,4 +1,4 @@
-package com.covid.covimaps.data.model.remote.covid.countrycode
+package com.covid.covimaps.data.model.retrofit
 
 import com.google.gson.annotations.SerializedName
 

@@ -1,10 +1,10 @@
-package com.covid.covimaps.data.repository
+package com.covid.covimaps.di
 
 import android.content.Context
 import androidx.room.Room
-import com.covid.covimaps.data.model.local.room.LocalDatabase
-import com.covid.covimaps.data.model.remote.covid.COVID_DATA_URL
-import com.covid.covimaps.data.model.remote.covid.GEOCODE_URL
+import com.covid.covimaps.data.model.local.COVID_DATA_URL
+import com.covid.covimaps.data.model.retrofit.GEOCODE_URL
+import com.covid.covimaps.data.model.room.LocalDatabase
 import com.covid.covimaps.data.repository.remote.countrycode.COUNTRY_CODE_BASE_URL
 import com.google.firebase.auth.FirebaseAuth
 import dagger.Module

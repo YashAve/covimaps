@@ -1,4 +1,4 @@
-package com.covid.covimaps.ui.component.composable
+package com.covid.covimaps.ui.composable
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background

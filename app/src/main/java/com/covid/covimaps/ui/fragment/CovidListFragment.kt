@@ -44,12 +44,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import com.covid.covimaps.data.model.local.room.CovidLocation
-import com.covid.covimaps.data.repository.remote.covid.FirebaseManager
-import com.covid.covimaps.ui.GoogleFonts
-import com.covid.covimaps.ui.component.composable.DynamicTabSelector
+import com.covid.covimaps.data.model.room.CovidLocation
+import com.covid.covimaps.ui.composable.DynamicTabSelector
 import com.covid.covimaps.ui.theme.CoviMapsTheme
+import com.covid.covimaps.ui.theme.GoogleFonts
 import com.covid.covimaps.ui.theme.LightGreen
+import com.covid.covimaps.util.FirebaseManager
 import com.covid.covimaps.viewmodel.MainViewModel
 
 private const val TAG = "CovidListFragment"

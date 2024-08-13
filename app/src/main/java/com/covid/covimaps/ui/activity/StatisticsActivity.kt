@@ -49,9 +49,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentContainerView
-import com.covid.covimaps.ui.activity.ui.theme.CoviMapsTheme
 import com.covid.covimaps.ui.fragment.CovidListFragment
 import com.covid.covimaps.ui.fragment.CovidMapFragment
+import com.covid.covimaps.ui.theme.CoviMapsTheme
 import com.covid.covimaps.viewmodel.MainViewModel
 import com.covid.covimaps.viewmodel.OnDataReadyCallback
 import com.covid.covimaps.viewmodel.getLocationsCount

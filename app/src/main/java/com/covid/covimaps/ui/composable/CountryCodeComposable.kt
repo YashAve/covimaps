@@ -1,5 +1,6 @@
-package com.covid.covimaps.ui.component.composable
+package com.covid.covimaps.ui.composable
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -26,7 +28,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,13 +36,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.covid.covimaps.data.model.local.room.CountryCodeUiState
+import com.covid.covimaps.data.model.room.CountryCodeUiState
+import com.covid.covimaps.util.hideSoftKeyBoard
 import com.covid.covimaps.viewmodel.UserViewModel
-import kotlinx.coroutines.async
 
 private const val TAG = "CountryCodeComposable"
 private lateinit var showCountryCodes: (Boolean) -> Unit
@@ -52,23 +54,18 @@ fun CustomCountryCode(
     viewModel: UserViewModel? = null,
     showCodes: (Boolean) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val activity = context as Activity
     var value by rememberSaveable { mutableStateOf("") }
     var available by rememberSaveable { mutableStateOf(true) }
-    var geoCodesAvailable by rememberSaveable { mutableStateOf(false) }
+    var geoCodesAvailable by rememberSaveable { mutableStateOf(viewModel?.generated ?: false) }
     val scope = rememberCoroutineScope()
 
-    var countryCodes: MutableList<CountryCodeUiState> = mutableListOf()
+    //var countryCodes: MutableList<CountryCodeUiState> = mutableListOf()
 
     showCountryCodes = showCodes
 
     val selectCountry: (String, String) -> Unit
-
-    LaunchedEffect(Unit) {
-        geoCodesAvailable = scope.async {
-            countryCodes = viewModel?.getDetails()?.toMutableList() ?: mutableListOf()
-            true
-        }.await()
-    }
 
     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
         Scaffold(topBar = {
@@ -78,12 +75,20 @@ fun CustomCountryCode(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 TextField(value = value, onValueChange = {
+                    available = true
                     value = it
+                    if (it != "") {
+                        if (viewModel?.countryCodeUiStates?.filter { list ->
+                                list.country.lowercase().startsWith(it.lowercase())
+                            }?.isEmpty() == true) {
+                            available = false
+                        }
+                    }
                 }, leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.ArrowBackIosNew,
                         contentDescription = "",
-                        modifier = Modifier.clickable { showCountryCodes(false) })
+                        modifier = Modifier.clickable { showCodes(false) })
                 }, trailingIcon = {
                     if (value != "") {
                         Icon(
@@ -91,7 +96,11 @@ fun CustomCountryCode(
                             contentDescription = "",
                             modifier = Modifier
                                 .size(32.dp)
-                                .clickable { available = false }
+                                .clickable {
+                                    value = ""
+                                    available = true
+                                    activity.hideSoftKeyBoard()
+                                }
                         )
                     }
                 }, placeholder = {
@@ -113,18 +122,20 @@ fun CustomCountryCode(
                             modifier = Modifier
                                 .padding(23.dp)
                                 .fillMaxWidth()
-                                .align(Alignment.CenterStart)
+                                .align(Alignment.TopCenter)
                         )
                     } else {
                         LazyColumn {
                             items(
-                                countryCodes
-                                    .filter { it.country.startsWith(value) }) {
+                                viewModel?.countryCodeUiStates!!
+                                    .filter {
+                                        it.country.lowercase().startsWith(value.lowercase())
+                                    }) {
                                 CountryCode(
                                     countryCodeUiState = it
                                 ) { altSpelling, countryCode ->
-                                    viewModel?.selectedCountry = altSpelling
-                                    viewModel?.selectedCountryCode = countryCode
+                                    viewModel.selectedCountry = altSpelling
+                                    viewModel.selectedCountryCode = countryCode
                                 }
                                 Spacer(
                                     modifier = modifier
@@ -135,6 +146,8 @@ fun CustomCountryCode(
                             }
                         }
                     }
+                } else {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
             }
         }

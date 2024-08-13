@@ -1,5 +1,6 @@
-package com.covid.covimaps.ui.component.composable
+package com.covid.covimaps.ui.composable
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,12 +38,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.covid.covimaps.R
-import com.covid.covimaps.data.model.local.room.CovidLocation
-import com.covid.covimaps.data.model.remote.covid.disclaimer
+import com.covid.covimaps.data.model.local.disclaimer
+import com.covid.covimaps.data.model.room.CovidLocation
 import com.covid.covimaps.ui.theme.DarkGreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private const val TAG = "Main"
 @Composable
 fun MapsModalContent(
     modifier: Modifier = Modifier,
@@ -201,6 +203,7 @@ fun Loader(
         scope.launch {
             while (count < 3) {
                 while (counter < 3) {
+                    Log.d(TAG, "Loader: $counter")
                     loadingMessage = "${".".repeat(counter)}$task"
                     delay(500)
                     counter++

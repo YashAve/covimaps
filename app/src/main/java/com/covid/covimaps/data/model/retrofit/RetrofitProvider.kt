@@ -1,7 +1,5 @@
-package com.covid.covimaps.data.repository.remote
+package com.covid.covimaps.data.model.retrofit
 
-import com.covid.covimaps.data.model.remote.covid.CovidGeocodes
-import com.covid.covimaps.data.model.remote.covid.countrycode.CountryCodes
 import com.google.gson.JsonObject
 import retrofit2.Call
 import retrofit2.http.GET

@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.firebase.auth.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -98,7 +99,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    implementation("com.google.android.material:material:1.12.0")
+    implementation(libs.material)
 
     /*retrofit related*/
     implementation(libs.retrofit)
@@ -120,14 +121,15 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
 
     /*firebase related*/
-    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
-    implementation("com.google.firebase:firebase-auth")
+    implementation(libs.firebase.bom)
+    implementation(libs.firebase.auth)
 
     /*fragments related*/
     implementation(libs.androidx.fragment.ktx)
     
     /*phone number hint*/
     implementation(libs.play.services.auth)
+    implementation(libs.libphonenumber)
 
     /*coil*/
     implementation(libs.coil)

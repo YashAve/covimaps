@@ -35,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -51,14 +52,15 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.covid.covimaps.data.repository.remote.covid.FirebaseManager
-import com.covid.covimaps.domain.GooglePlayServicesManager
-import com.covid.covimaps.ui.GoogleFonts
-import com.covid.covimaps.ui.activity.ui.theme.CoviMapsTheme
-import com.covid.covimaps.ui.component.composable.CustomCountryCode
-import com.covid.covimaps.ui.component.composable.Loader
+import com.covid.covimaps.ui.composable.CustomCountryCode
+import com.covid.covimaps.ui.composable.Loader
+import com.covid.covimaps.ui.theme.CoviMapsTheme
+import com.covid.covimaps.ui.theme.GoogleFonts
+import com.covid.covimaps.util.FirebaseManager
+import com.covid.covimaps.util.GooglePlayServicesManager
 import com.covid.covimaps.viewmodel.UserViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.async
 
 private const val TAG = "LoginActivity"
 
@@ -71,24 +73,13 @@ private lateinit var startActivity: () -> Unit
 class LoginActivity : ComponentActivity() {
 
     private val viewModel: UserViewModel by viewModels()
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-
-        startActivity = {
-            val intent = Intent(this, ProfileActivity::class.java)
-            startActivity(intent)
-            onFinish()
-        }
-
-        onFinish = { finish() }
         
-
-        firebaseManager = FirebaseManager(this)
-        googlePlayServicesManager = GooglePlayServicesManager(this)
-
-
+        init()
+        
+        enableEdgeToEdge()
         setContent {
             CoviMapsTheme {
                 Main(
@@ -96,6 +87,20 @@ class LoginActivity : ComponentActivity() {
                 )
             }
         }
+    }
+    
+    private fun init() {
+        /*lifecycleScope.launch {
+            viewModel.getDetails()
+        }*/
+        startActivity = {
+            val intent = Intent(this, ProfileActivity::class.java)
+            startActivity(intent)
+            onFinish()
+        }
+        onFinish = { finish() }
+        firebaseManager = FirebaseManager(this)
+        googlePlayServicesManager = GooglePlayServicesManager(this)
     }
 }
 
@@ -106,7 +111,6 @@ private fun Login(
     resendOTP: (String) -> Unit = {},
     showCountryCodes: (Boolean) -> Unit = {}
 ) {
-    val scope = rememberCoroutineScope()
     var status by rememberSaveable { mutableIntStateOf(0) }
     var heading by rememberSaveable { mutableStateOf("Can we get your number, please?") }
     var number by rememberSaveable { mutableStateOf("") }
@@ -340,10 +344,27 @@ private fun Main(
     viewModel: UserViewModel? = null
 ) {
     var show by rememberSaveable { mutableStateOf(false) }
-    val showScreen: (Boolean) -> Unit = {
-        Log.d(TAG, "Main: CountryCodeComposable show is $show")
-        show = it
+    var loading by rememberSaveable { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    if (loading) {
+        Loader()
+        LaunchedEffect(Unit) {
+            Log.d(TAG, "Main: LaunchedEffect is called")
+            show = scope.async {
+                viewModel?.getDetails()
+                loading = false
+                Log.d(TAG, "Main: Launched effect is completed")
+                true
+            }.await()
+        }
     }
+
+    val showScreen: (Boolean) -> Unit = {
+        Log.d(TAG, "Main: CountryCodeComposable show is $it")
+        if (it) loading = true else show = false
+    }
+
     if (show) {
         CustomCountryCode(viewModel = viewModel, showCodes = showScreen)
     } else {

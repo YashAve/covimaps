@@ -1,4 +1,4 @@
-package com.covid.covimaps.data.model.remote.covid
+package com.covid.covimaps.data.model.local
 
 import com.google.android.gms.maps.model.LatLng
 

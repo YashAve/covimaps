@@ -5,4 +5,47 @@
     <string name="title_activity_statistics">StatisticsActivity</string>
     <string name="title_activity_login">LoginActivity</string>
     <string name="title_activity_profile">ProfileActivity</string>
+    <string name="title_activity_welcome">WelcomeActivity</string>
+    <string name="title_activity_survey">SurveyActivity</string>
+
+    <string-array name="symptoms">
+        <item>"Fever is a temporary rise in body temperature, typically above 100.4°F (38°C), often caused by an infection or illness. It is the body's natural response to fighting off pathogens, such as bacteria or viruses. The brain's hypothalamus increases the body's set temperature to create an environment less favorable to these invaders. Symptoms accompanying fever can include sweating, chills, headache, and general weakness. Although usually a sign of the body working to heal itself, a persistent or very high fever may require medical attention."</item>
+        <item>"A persistent cough is a cough that lasts longer than eight weeks in adults or four weeks in children and can be a symptom of an underlying condition. It may be caused by respiratory infections, such as bronchitis or pneumonia, chronic conditions like asthma or chronic obstructive pulmonary disease (COPD), allergies, gastroesophageal reflux disease (GERD), or even certain medications. This type of cough can be dry or productive, meaning it brings up mucus or phlegm. Persistent coughs often require medical evaluation to determine the cause and appropriate treatment."</item>
+        <item>"Shortness of breath, or difficulty breathing, is a sensation of not being able to breathe deeply or comfortably, often described as feeling "breathless." It can be caused by a variety of factors, ranging from mild to severe, including respiratory infections like pneumonia or COVID-19, chronic conditions such as asthma, chronic obstructive pulmonary disease (COPD), heart issues like heart failure, or anxiety and panic attacks. It may occur suddenly or develop gradually and can be accompanied by symptoms like chest pain, coughing, or wheezing. Persistent or severe shortness of breath requires prompt medical attention, as it can signal a serious underlying condition."</item>
+        <item>"Loss of taste or smell, known as anosmia and ageusia respectively, is a symptom where a person experiences a reduced ability or complete inability to perceive flavors and scents. This can occur due to various causes, including upper respiratory infections like the common cold, sinusitis, or COVID-19, which can cause inflammation and congestion that block the sensory pathways. Other causes include head injuries, neurological conditions, or certain medications. These senses are closely linked, so losing one often affects the other. While sometimes temporary, persistent loss of taste or smell may require medical evaluation to identify and address the underlying cause."</item>
+        <item>"Muscle or body aches, also known as myalgia, are common symptoms characterized by widespread pain or discomfort in the muscles or throughout the body. These aches can result from various factors, including physical exertion, stress, viral infections like the flu or COVID-19, chronic conditions such as fibromyalgia, or inflammatory disorders. The pain can range from mild to severe and may be accompanied by other symptoms like fatigue, fever, or joint pain. Muscle or body aches typically occur when the body's immune system responds to an infection or inflammation, leading to the release of chemicals that cause pain and discomfort. While often temporary, persistent or severe muscle aches may indicate a more serious underlying condition and should be evaluated by a healthcare professional."</item>
+        <item>"A sore throat is an uncomfortable irritation or pain in the back of your throat, often worsened by swallowing. It's commonly caused by viral infections like the common cold or flu, but can also be triggered by bacterial infections, allergies, dry air, or irritants like smoke. While most sore throats resolve on their own, severe cases or those accompanied by fever, difficulty swallowing, or swollen lymph nodes may require medical attention."</item>
+        <item>"A headache is a pain or discomfort in the head, often described as throbbing, aching, or pressure-like. It can range from mild to severe and can be caused by various factors including tension, migraines, sinus congestion, dehydration, medication side effects, or underlying medical conditions. Common headache symptoms may include sensitivity to light or sound, nausea, and fatigue. While most headaches are not serious, persistent or severe headaches should be evaluated by a healthcare professional."</item>
+        <item>"Fatigue is a pervasive feeling of weariness, exhaustion, or lack of energy that interferes with daily activities. It can range from mild tiredness to severe exhaustion and can be caused by various factors including insufficient sleep, physical exertion, emotional stress, underlying medical conditions, or side effects of medications. While it's a common experience, persistent or excessive fatigue should be evaluated by a healthcare professional to rule out any potential underlying health issues."</item>
+        <item>"Nausea is an unpleasant sensation of queasiness or stomach upset often accompanied by a feeling of impending vomiting. Vomiting, also known as emesis, is the forceful expulsion of stomach contents through the mouth. Both can be caused by various factors including food poisoning, viral infections, motion sickness, pregnancy, medication side effects, or underlying medical conditions. Nausea may precede vomiting but can also occur independently. While occasional nausea or vomiting is usually self-limiting, persistent or severe symptoms should prompt medical evaluation."</item>
+        <item>"Diarrhea is a condition characterized by frequent and loose or watery stools. It can range from mild to severe and can be caused by various factors including viral or bacterial infections, food poisoning, inflammatory bowel diseases, medication side effects, or dietary intolerances. Dehydration is a common concern with diarrhea due to fluid loss, so it's important to replenish fluids and electrolytes. While mild cases often resolve on their own, persistent or severe diarrhea may require medical attention to determine the underlying cause and appropriate treatment."</item>
+    </string-array>
+
+
+    <string-array name="existing_diseases">
+        <item>"Hypertension"</item>
+        <item>"Heart Disease"</item>
+        <item>"Respiratory Disease"</item>
+        <item>"Diabetes"</item>
+        <item>"Obesity"</item>
+        <item>"Chronic kidney disease"</item>
+        <item>"Liver disease"</item>
+        <item>"Cancer"</item>
+        <item>"Neurological conditions"</item>
+    </string-array>
+
+    <string-array name="covid_medicines">
+        <item>"Remdesivir"</item>
+        <item>"Dexamethasone"</item>
+        <item>"Tocilizumab"</item>
+        <item>"Baricitinib"</item>
+        <item>"Nirmatrelvir-ritonavir (Paxlovid)"</item>
+        <item>"Molnupiravir"</item>
+        <item>"Convalescent plasma"</item>
+        <item>"Azithromycin"</item>
+        <item>"paracetamol"</item>
+        <item>"ibuprofen"</item>
+        <item>"Vitamins and supplements"</item>
+    </string-array>
+
 </resources>

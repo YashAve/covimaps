@@ -1,4 +1,4 @@
-package com.covid.covimaps.data.model.local.room
+package com.covid.covimaps.data.model.room
 
 import androidx.room.Database
 import androidx.room.RoomDatabase

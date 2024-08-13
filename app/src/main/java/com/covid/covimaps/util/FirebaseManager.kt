@@ -1,4 +1,4 @@
-package com.covid.covimaps.data.repository.remote.covid
+package com.covid.covimaps.util
 
 import android.util.Log
 import androidx.activity.ComponentActivity
