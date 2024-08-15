@@ -1,4 +1,4 @@
-package com.covid.covimaps.data.repository.remote.countrycode
+package com.covid.covimaps.data.repository.remote
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory

@@ -19,9 +19,12 @@ interface APIService {
     @GET("geocode/json")
     suspend fun getGeocodeResponse(
         @retrofit2.http.Query("address") address: String,
-        @retrofit2.http.Query("key") key: String
+        @retrofit2.http.Query("key") key: String,
     ): CovidGeocodes
 
     @GET("all")
     suspend fun getCountryCodes(): MutableList<CountryCodes>
+
+    @GET("countries")
+    suspend fun getStatesAndCities(): StatesAndCitiesData
 }

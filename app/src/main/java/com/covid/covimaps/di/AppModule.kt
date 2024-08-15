@@ -5,7 +5,8 @@ import androidx.room.Room
 import com.covid.covimaps.data.model.local.COVID_DATA_URL
 import com.covid.covimaps.data.model.retrofit.GEOCODE_URL
 import com.covid.covimaps.data.model.room.LocalDatabase
-import com.covid.covimaps.data.repository.remote.countrycode.COUNTRY_CODE_BASE_URL
+import com.covid.covimaps.data.repository.remote.COUNTRY_CODE_BASE_URL
+import com.covid.covimaps.data.repository.remote.STATES_AND_CITIES_BASE_URL
 import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
 import dagger.Provides
@@ -29,6 +30,10 @@ annotation class CountryCodeBaseUrl
 @Retention(AnnotationRetention.BINARY)
 annotation class GeoCodeBaseUrl
 
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class StatesAndCitiesBaseUrl
+
 @Module
 @InstallIn(SingletonComponent::class)
 class AppModule {
@@ -36,6 +41,7 @@ class AppModule {
     @Provides
     fun provideLocalDatabase(@ApplicationContext appContext: Context): LocalDatabase =
         Room.databaseBuilder(appContext, LocalDatabase::class.java, "covid-database")
+            .fallbackToDestructiveMigration()
             .build()
 
     @Provides
@@ -65,6 +71,16 @@ class AppModule {
             .Builder().apply {
                 baseUrl(GEOCODE_URL)
                     .addConverterFactory(GsonConverterFactory.create())
+            }.build()
+    }
+
+    @Provides
+    @StatesAndCitiesBaseUrl
+    fun provideRetrofitStatesAndCities(): Retrofit {
+        return Retrofit
+            .Builder().apply {
+                baseUrl(STATES_AND_CITIES_BASE_URL)
+                addConverterFactory(GsonConverterFactory.create())
             }.build()
     }
 

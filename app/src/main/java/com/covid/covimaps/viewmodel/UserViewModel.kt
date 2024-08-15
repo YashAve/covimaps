@@ -3,7 +3,7 @@ package com.covid.covimaps.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.covid.covimaps.data.model.room.CountryCodeUiState
-import com.covid.covimaps.data.repository.remote.countrycode.CustomCountryCode
+import com.covid.covimaps.data.repository.remote.CustomCountryCode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import javax.inject.Inject

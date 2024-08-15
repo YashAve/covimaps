@@ -24,3 +24,15 @@ interface CountryDao {
     @Query("SELECT COUNT(*) FROM countries")
     fun getCount(): Int
 }
+
+@Dao
+interface CountryAndCityDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(vararg countryAndCity: CountryAndCity)
+    @Query("SELECT country FROM countries_and_cities ORDER BY country")
+    suspend fun getCountries(): List<String>
+    @Query("SELECT city FROM countries_and_cities WHERE country = :country ORDER BY city")
+    suspend fun getCities(country: String): List<String>
+    @Query("SELECT COUNT(*) FROM countries_and_cities")
+    suspend fun getCount(): Int
+}

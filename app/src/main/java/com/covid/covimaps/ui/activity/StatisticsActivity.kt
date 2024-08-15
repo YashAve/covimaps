@@ -18,7 +18,9 @@ class StatisticsActivity : AppCompatActivity() {
 
         enableEdgeToEdge()
         setContent {
-            Statistics(viewModel = viewModel)
+            Statistics(viewModel = viewModel) {
+                finish()
+            }
         }
     }
 }

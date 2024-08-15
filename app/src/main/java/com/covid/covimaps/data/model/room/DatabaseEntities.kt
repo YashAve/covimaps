@@ -94,3 +94,9 @@ data class CountryCodeUiState(
         return result
     }
 }
+
+@Entity(tableName = "countries_and_cities", primaryKeys = ["city", "country"])
+data class CountryAndCity(
+    @ColumnInfo("city") val city: String,
+    @ColumnInfo("country") val country: String
+)

@@ -1,5 +1,6 @@
 package com.covid.covimaps.ui.activity
 
+import android.content.Intent
 import android.media.AudioManager
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -9,13 +10,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,6 +49,9 @@ import java.util.Locale
 
 private const val TAG = "ProfileActivity"
 
+private lateinit var onSurvey: () -> Unit
+private lateinit var onStatistics: () -> Unit
+
 class ProfileActivity : ComponentActivity() {
 
     private val dataStoreManager by lazy {
@@ -56,9 +64,7 @@ class ProfileActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        if (!isInPreview()) {
-            initializeTextToSpeech()
-        }
+        init()
 
         setContent {
             CoviMapsTheme {
@@ -76,6 +82,20 @@ class ProfileActivity : ComponentActivity() {
                     }
                 )
             }
+        }
+    }
+
+    private fun init() {
+        onSurvey = {
+            val intent = Intent(this, SurveyActivity::class.java)
+            startActivity(intent)
+        }
+        onStatistics = {
+            val intent = Intent(this, StatisticsActivity::class.java)
+            startActivity(intent)
+        }
+        if (!isInPreview()) {
+            initializeTextToSpeech()
         }
     }
 
@@ -106,7 +126,7 @@ class ProfileActivity : ComponentActivity() {
                     null
                 )
             } else {
-                if (it.isSpeaking) it.stop() else TODO()
+                if (it.isSpeaking) it.stop() else {}
             }
         }
     }
@@ -170,17 +190,30 @@ fun Profile(
                 )
             }
         }) { scaffold ->
-            Box(modifier = Modifier.padding(scaffold)) {
+            Box(modifier = Modifier
+                .padding(scaffold)
+                .fillMaxSize()) {
                 if (disclaimer) DisclaimerDialog(
                     readOutLoud = readOutLoud,
                     onAgree = {
-                        agreeToDisclaimer()
-                        disclaimer = true
+                        //agreeToDisclaimer()
+                        disclaimer = false
                     },
                     onDisagree = {
                         disclaimer = false
                     }
                 )
+                Column(modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 30.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    OutlinedButton(onClick = { onSurvey() }) {
+                        Text(text = "Health Survey")
+                    }
+                    FilledTonalButton(onClick = { onStatistics() }) {
+                        Text(text = "View Statistics")
+                    }
+                }
             }
         }
     }

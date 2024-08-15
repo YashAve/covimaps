@@ -59,17 +59,17 @@ private const val TAG = "SymptomsCheck"
 private lateinit var speakOutLoad: (Boolean, String) -> Unit
 private val survey: MutableMap<String, String> = mutableMapOf()
 
+private lateinit var onCheck: (String, String) -> Unit
+private lateinit var isEnabled: (String) -> Unit
+
 @Composable
 fun HealthCheck(
-    modifier: Modifier = Modifier,
-    questionare: MutableMap<String, String> = mutableMapOf(),
     readOutLoud: (Boolean, String) -> Unit = { _, _ -> },
     onFinish: () -> Unit = {},
 ) {
 
     val context = LocalContext.current
     val symptoms = context.resources.getStringArray(R.array.symptoms)
-    val total = symptoms.size
     val diseases = Symptoms.entries
 
     var counter by rememberSaveable { mutableIntStateOf(0) }
@@ -88,6 +88,15 @@ fun HealthCheck(
         label = diseases[counter].name.replace("_", " ")
         disease = diseases[counter].symptom
         symptom = symptoms[counter]
+    }
+
+    onCheck = { question, answer ->
+        survey[question] = answer
+        enabled = answer != ""
+    }
+
+    isEnabled = {
+        enabled = it != ""
     }
 
     speakOutLoad = readOutLoud
@@ -125,12 +134,11 @@ fun HealthCheck(
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
-                    if (!submit) CustomCheckBox(question = disease, onSelect = {
-                        survey[disease] = it
-                    }) { enabled = it }
+                    if (!submit) CustomCheckBox(question = disease)
                     Box(modifier = Modifier.fillMaxWidth()) {
                         if (counter > 0) ElevatedButton(
                             onClick = {
+                                //enabled = survey[diseases[counter].symptom] == ""
                                 onChange(false)
                             },
                             modifier = Modifier.align(Alignment.CenterStart)
@@ -142,6 +150,7 @@ fun HealthCheck(
                                 if (counter < 9) {
                                     onChange(true)
                                 } else submit = true
+                                //enabled = false
                                 Log.d(TAG, "HealthCheck: $survey")
                             },
                             enabled = enabled,
@@ -168,8 +177,7 @@ fun HealthCheck(
                     symptom = symptom
                 ) else Form(
                     modifier = Modifier
-                        .padding(padding + 12.dp), padding = padding
-                )
+                        .padding(padding + 12.dp))
             }
         }
     }
@@ -225,8 +233,7 @@ fun DiseaseCard(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Form(
-    modifier: Modifier = Modifier,
-    padding: Dp
+    modifier: Modifier = Modifier
 ) {
     val questions = CovidSymptoms.entries
     val existingDiseases = LocalContext.current.resources.getStringArray(R.array.existing_diseases)
@@ -238,9 +245,8 @@ fun Form(
     Column {
         Column(modifier = modifier.verticalScroll(scrollState)) {
             questions.subList(0, 3).forEach { question ->
-                LabelledCheckBox(question = question.symptom, onSelect = {
-                    survey[question.symptom] = it
-                })
+                Text(text = question.symptom)
+                CustomCheckBox(question = question.symptom)
             }
             Text(
                 text = questions[3].symptom,
@@ -253,17 +259,15 @@ fun Form(
                     CustomFilterChip(label = it)
                 }
             }
-            LabelledCheckBox(
+            Text(text = questions[4].symptom)
+            CustomCheckBox(
                 question = questions[4].symptom,
-                onSelect = { survey[questions[4].symptom] = it },
                 another = true
             )
-            LabelledCheckBox(
+            Text(text = questions[5].symptom)
+            CustomCheckBox(
                 question = questions[5].symptom,
-                onSelect = {
-                    survey[questions[4].symptom] = it
-                    positive = it == "Yes"
-                }
+                another = false
             )
             if (positive) {
                 Log.d(TAG, "Form: $survey")
@@ -284,47 +288,10 @@ fun Form(
 }
 
 @Composable
-fun CustomFilterChip(
-    modifier: Modifier = Modifier,
-    label: String,
-) {
-    var selected by rememberSaveable { mutableStateOf(false) }
-    FilterChip(
-        selected = selected,
-        onClick = { selected = !selected },
-        label = { Text(text = label) },
-        leadingIcon = {
-            if (selected) Icon(imageVector = Icons.Default.Check, contentDescription = "")
-        },
-        modifier = Modifier.wrapContentWidth()
-    )
-}
-
-@Composable
-fun LabelledCheckBox(
-    modifier: Modifier = Modifier,
-    question: String,
-    onSelect: (String) -> Unit,
+fun CustomCheckBox(
+    question: String = "",
     another: Boolean = false
 ) {
-    Column {
-        Text(
-            text = question,
-            fontSize = 15.sp
-        )
-        CustomCheckBox(another = another, question = question, onSelect = onSelect)
-    }
-}
-
-@Composable
-fun CustomCheckBox(
-    modifier: Modifier = Modifier,
-    question: String = "",
-    another: Boolean = false,
-    onSelect: (String) -> Unit = {},
-    onCheck: (Boolean) -> Unit = {}
-) {
-    Log.d(TAG, "CustomCheckBox: $question, ${survey[question]}")
     var yes by rememberSaveable { mutableStateOf(false) }
     var no by rememberSaveable { mutableStateOf(false) }
     var partially by rememberSaveable { mutableStateOf(false) }
@@ -343,8 +310,7 @@ fun CustomCheckBox(
                 yes = it
                 no = false
                 if (another) partially = false
-                onCheck(true)
-                onSelect("Yes")
+                onCheck(question, "Yes")
             })
         }
         if (another) Row(
@@ -353,11 +319,10 @@ fun CustomCheckBox(
         ) {
             Text(text = "Partially")
             Checkbox(checked = yes, onCheckedChange = {
-                partially = true
+                partially = it
                 yes = false
                 no = false
-                onCheck(true)
-                onSelect("Partially")
+                onCheck(question, "Partially")
             })
         }
         Row(
@@ -369,11 +334,26 @@ fun CustomCheckBox(
                 no = it
                 yes = false
                 if (another) partially = false
-                onCheck(true)
-                onSelect("No")
+                onCheck(question, "No")
             })
         }
     }
+}
+
+@Composable
+fun CustomFilterChip(
+    label: String,
+) {
+    var selected by rememberSaveable { mutableStateOf(false) }
+    FilterChip(
+        selected = selected,
+        onClick = { selected = !selected },
+        label = { Text(text = label) },
+        leadingIcon = {
+            if (selected) Icon(imageVector = Icons.Default.Check, contentDescription = "")
+        },
+        modifier = Modifier.wrapContentWidth()
+    )
 }
 
 @Preview(showBackground = true)
@@ -391,5 +371,5 @@ private fun CustomCheckBoxPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun FormPreview() {
-    Form(padding = 23.dp)
+    Form()
 }
