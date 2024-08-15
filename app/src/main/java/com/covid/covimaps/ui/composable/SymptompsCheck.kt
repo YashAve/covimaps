@@ -57,6 +57,7 @@ import com.covid.covimaps.ui.theme.GoogleFonts
 
 private const val TAG = "SymptomsCheck"
 private lateinit var speakOutLoad: (Boolean, String) -> Unit
+private val survey: MutableMap<String, String> = mutableMapOf()
 
 @Composable
 fun HealthCheck(
@@ -124,8 +125,8 @@ fun HealthCheck(
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
-                    if (!submit) CustomCheckBox(onSelect = {
-                        questionare[disease] = it
+                    if (!submit) CustomCheckBox(question = disease, onSelect = {
+                        survey[disease] = it
                     }) { enabled = it }
                     Box(modifier = Modifier.fillMaxWidth()) {
                         if (counter > 0) ElevatedButton(
@@ -141,7 +142,7 @@ fun HealthCheck(
                                 if (counter < 9) {
                                     onChange(true)
                                 } else submit = true
-                                Log.d(TAG, "HealthCheck: $questionare")
+                                Log.d(TAG, "HealthCheck: $survey")
                             },
                             enabled = enabled,
                             modifier = Modifier
@@ -225,8 +226,7 @@ fun DiseaseCard(
 @Composable
 fun Form(
     modifier: Modifier = Modifier,
-    padding: Dp,
-    questionare: MutableMap<String, String> = mutableMapOf()
+    padding: Dp
 ) {
     val questions = CovidSymptoms.entries
     val existingDiseases = LocalContext.current.resources.getStringArray(R.array.existing_diseases)
@@ -239,7 +239,7 @@ fun Form(
         Column(modifier = modifier.verticalScroll(scrollState)) {
             questions.subList(0, 3).forEach { question ->
                 LabelledCheckBox(question = question.symptom, onSelect = {
-                    questionare[question.symptom] = it
+                    survey[question.symptom] = it
                 })
             }
             Text(
@@ -255,17 +255,18 @@ fun Form(
             }
             LabelledCheckBox(
                 question = questions[4].symptom,
-                onSelect = { questionare[questions[4].symptom] = it },
+                onSelect = { survey[questions[4].symptom] = it },
                 another = true
             )
             LabelledCheckBox(
                 question = questions[5].symptom,
-                onSelect = { questionare[questions[4].symptom] = it
+                onSelect = {
+                    survey[questions[4].symptom] = it
                     positive = it == "Yes"
                 }
             )
             if (positive) {
-                Log.d(TAG, "Form: $questionare")
+                Log.d(TAG, "Form: $survey")
                 Text(
                     text = questions[5].symptom,
                     fontSize = 15.sp
@@ -311,20 +312,26 @@ fun LabelledCheckBox(
             text = question,
             fontSize = 15.sp
         )
-        CustomCheckBox(another = another, onSelect = onSelect)
+        CustomCheckBox(another = another, question = question, onSelect = onSelect)
     }
 }
 
 @Composable
 fun CustomCheckBox(
     modifier: Modifier = Modifier,
+    question: String = "",
     another: Boolean = false,
     onSelect: (String) -> Unit = {},
     onCheck: (Boolean) -> Unit = {}
 ) {
+    Log.d(TAG, "CustomCheckBox: $question, ${survey[question]}")
     var yes by rememberSaveable { mutableStateOf(false) }
     var no by rememberSaveable { mutableStateOf(false) }
     var partially by rememberSaveable { mutableStateOf(false) }
+
+    yes = survey[question] == "Yes"
+    no = survey[question] == "No"
+    partially = survey[question] == "Partially"
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Row(
