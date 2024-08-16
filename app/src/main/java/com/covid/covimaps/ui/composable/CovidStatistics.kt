@@ -1,6 +1,7 @@
 package com.covid.covimaps.ui.composable
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -60,7 +61,9 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 
-private lateinit var covidLocations: MutableList<CovidLocation>
+private const val TAG = "CovidStatistics"
+
+private var covidLocations: Map<Int, CovidLocation> = mutableMapOf()
 private val covid: CovidLocation = CovidLocation(
     state = "Andaman and Nicobar Islands",
     district = "Nicobars",
@@ -76,11 +79,13 @@ private val covid: CovidLocation = CovidLocation(
     covaxin = 20313
 )
 
+private lateinit var first: LatLng
+
 @Composable
 fun Statistics(
     modifier: Modifier = Modifier,
     viewModel: MainViewModel? = null,
-    onFinish: () -> Unit = {}
+    onFinish: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     var loading by rememberSaveable { mutableStateOf(true) }
@@ -97,19 +102,21 @@ fun Statistics(
     LaunchedEffect(Unit) {
         loading = scope.async {
             delay(2000)
-            covidLocations = viewModel?.getLocations() ?: mutableListOf()
+            viewModel?.getLocations()
+            covidLocations = viewModel?.covidMap ?: mutableMapOf()
+            first = viewModel?.first!!
             false
         }.await()
     }
 
-    /*if (selected) LaunchedEffect(Unit) {
-        selected = scope.async {
-            lazyListState.animateScrollToItem(index = selectedIndex)
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex > 0) {
             selectedOption = 1
             rotated = !rotated
-            false
-        }.await()
-    }*/
+            delay(100)
+            lazyListState.scrollToItem(selectedIndex - 1)
+        }
+    }
 
     CoviMapsTheme {
         Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
@@ -187,7 +194,7 @@ fun Statistics(
                                 if (frontVisible) {
                                     MapView(modifier = Modifier.fillMaxSize()) {
                                         selectedIndex = it
-                                        selected = true
+                                        //selected = true
                                     }
                                 } else {
                                     ListView(
@@ -208,13 +215,20 @@ fun Statistics(
 fun MapView(modifier: Modifier = Modifier, onClick: (Int) -> Unit = {}) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
-            LatLng(
-                covidLocations.get(0).latitude,
-                covidLocations.get(1).longitude
-            ), 7f
+            first, 7f
         )
     }
     var drawable by rememberSaveable { mutableIntStateOf(R.drawable.red_covid_icon) }
+    var shouldLoad by rememberSaveable { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        shouldLoad = scope.async {
+            delay(200)
+            true
+        }.await()
+    }
 
     Box {
         GoogleMap(
@@ -222,20 +236,21 @@ fun MapView(modifier: Modifier = Modifier, onClick: (Int) -> Unit = {}) {
                 .fillMaxSize(),
             cameraPositionState = cameraPositionState
         ) {
-            covidLocations.forEachIndexed { index, covidLocation ->
+            if (shouldLoad) covidLocations.forEach { (key, value) ->
                 drawable =
                     R.drawable.red_covid_icon
                 Marker(
                     state = MarkerState(
                         LatLng(
-                            covidLocation.latitude,
-                            covidLocation.longitude
+                            value.latitude,
+                            value.longitude
                         )
                     ),
-                    title = "${covidLocation.district}, ${covidLocation.state}",
+                    title = "${value.district}, ${value.state}",
                     icon = BitmapDescriptorFactory.fromResource(drawable),
                     onInfoWindowClick = {
-                        onClick(index)
+                        Log.d(TAG, "MapView: ")
+                        onClick(key)
                     }
                 )
             }
@@ -245,9 +260,36 @@ fun MapView(modifier: Modifier = Modifier, onClick: (Int) -> Unit = {}) {
 
 @Composable
 fun ListView(modifier: Modifier = Modifier, lazyListState: LazyListState) {
-    LazyColumn(state = lazyListState, modifier = modifier) {
-        items(covidLocations) {
-            CardContent(covidLocation = it)
+
+    var filter by rememberSaveable { mutableStateOf("") }
+
+    var shouldLoad by rememberSaveable { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        shouldLoad = scope.async {
+            delay(200)
+            true
+        }.await()
+    }
+
+    val onFiltering: (CovidLocation) -> Boolean = {
+        it.district.lowercase().startsWith(filter.lowercase())
+    }
+
+    if (shouldLoad) Column {
+        SearchBar {
+            if (it != "") {
+                filter = it
+            }
+        }
+        LazyColumn(state = lazyListState, modifier = modifier) {
+            items(
+                covidLocations.filter { onFiltering(it.value) }.toList()
+                    .sortedBy { it.first }) { item ->
+                CardContent(covidLocation = item.second)
+            }
         }
     }
 }

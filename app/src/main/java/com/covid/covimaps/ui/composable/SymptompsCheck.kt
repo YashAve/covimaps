@@ -57,10 +57,9 @@ import com.covid.covimaps.ui.theme.GoogleFonts
 
 private const val TAG = "SymptomsCheck"
 private lateinit var speakOutLoad: (Boolean, String) -> Unit
-private val survey: MutableMap<String, String> = mutableMapOf()
+private var survey: MutableMap<String, String> = mutableMapOf()
 
-private lateinit var onCheck: (String, String) -> Unit
-private lateinit var isEnabled: (String) -> Unit
+private lateinit var onChecked: (String, String) -> Unit
 
 @Composable
 fun HealthCheck(
@@ -79,24 +78,22 @@ fun HealthCheck(
     var enabled by rememberSaveable { mutableStateOf(false) }
     val opacity by rememberSaveable { mutableFloatStateOf(if (enabled) 1f else 0.5f) }
     var submit by rememberSaveable { mutableStateOf(false) }
-    val nextLabel by rememberSaveable { mutableStateOf(if (submit) "Submit" else "Next") }
 
     val padding = 17.dp
 
     val onChange: (Boolean) -> Unit = {
-        if (it) counter++ else counter--
-        label = diseases[counter].name.replace("_", " ")
-        disease = diseases[counter].symptom
-        symptom = symptoms[counter]
+        Log.d(TAG, "HealthCheck: counter $counter with ${diseases[counter].symptom}")
+        if (counter < 9) {
+            if (it) counter++ else counter--
+            label = diseases[counter].name.replace("_", " ")
+            disease = diseases[counter].symptom
+            symptom = symptoms[counter]
+        }
     }
 
-    onCheck = { question, answer ->
+    onChecked = { question, answer ->
         survey[question] = answer
-        enabled = answer != ""
-    }
-
-    isEnabled = {
-        enabled = it != ""
+        enabled = survey[question] != ""
     }
 
     speakOutLoad = readOutLoud
@@ -114,7 +111,9 @@ fun HealthCheck(
                     contentDescription = "exit app",
                     modifier = Modifier
                         .align(Alignment.CenterStart)
-                        .clickable { onFinish() }
+                        .clickable {
+                            survey = mutableMapOf()
+                            onFinish() }
                 )
                 Text(
                     text = "Health Survey",
@@ -129,36 +128,30 @@ fun HealthCheck(
         },
             bottomBar = {
                 Column(modifier = Modifier.padding(padding)) {
-                    if (!submit) Text(
+                    if (counter < 10) Text(
                         text = disease,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
-                    if (!submit) CustomCheckBox(question = disease)
+                    if (counter < 10) CustomCheckBox(question = disease)
                     Box(modifier = Modifier.fillMaxWidth()) {
                         if (counter > 0) ElevatedButton(
-                            onClick = {
-                                //enabled = survey[diseases[counter].symptom] == ""
-                                onChange(false)
-                            },
+                            onClick = { onChange(false) },
                             modifier = Modifier.align(Alignment.CenterStart)
                         ) {
                             Text(text = "Previous", fontWeight = FontWeight.Bold)
                         }
                         FilledTonalButton(
-                            onClick = {
-                                if (counter < 9) {
-                                    onChange(true)
-                                } else submit = true
-                                //enabled = false
-                                Log.d(TAG, "HealthCheck: $survey")
-                            },
+                            onClick = { onChange(true) },
                             enabled = enabled,
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
                                 .alpha(opacity)
                         ) {
-                            Text(text = nextLabel, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = if (counter < 10) "Next" else "Submit",
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -168,16 +161,18 @@ fun HealthCheck(
                     .padding(scaffold)
                     .fillMaxSize()
             ) {
-                if (!submit) DiseaseCard(
+                if (counter < 10) DiseaseCard(
                     modifier = Modifier
                         .padding(padding + 12.dp)
                         .align(Alignment.Center),
                     padding = padding,
                     label = label,
-                    symptom = symptom
+                    symptom = symptom,
+                    question = disease
                 ) else Form(
                     modifier = Modifier
-                        .padding(padding + 12.dp))
+                        .padding(padding + 12.dp)
+                )
             }
         }
     }
@@ -188,9 +183,12 @@ fun DiseaseCard(
     modifier: Modifier = Modifier,
     padding: Dp,
     label: String,
-    symptom: String
+    symptom: String,
+    question: String
 ) {
     var mikeEnabled by rememberSaveable { mutableStateOf(false) }
+
+    onChecked(question, survey[question] ?: "")
 
     val stop = {
         speakOutLoad(true, "")
@@ -233,7 +231,7 @@ fun DiseaseCard(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Form(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val questions = CovidSymptoms.entries
     val existingDiseases = LocalContext.current.resources.getStringArray(R.array.existing_diseases)
@@ -290,7 +288,7 @@ fun Form(
 @Composable
 fun CustomCheckBox(
     question: String = "",
-    another: Boolean = false
+    another: Boolean = false,
 ) {
     var yes by rememberSaveable { mutableStateOf(false) }
     var no by rememberSaveable { mutableStateOf(false) }
@@ -310,7 +308,7 @@ fun CustomCheckBox(
                 yes = it
                 no = false
                 if (another) partially = false
-                onCheck(question, "Yes")
+                onChecked(question, "Yes")
             })
         }
         if (another) Row(
@@ -322,7 +320,7 @@ fun CustomCheckBox(
                 partially = it
                 yes = false
                 no = false
-                onCheck(question, "Partially")
+                onChecked(question, "Partially")
             })
         }
         Row(
@@ -334,7 +332,7 @@ fun CustomCheckBox(
                 no = it
                 yes = false
                 if (another) partially = false
-                onCheck(question, "No")
+                onChecked(question, "No")
             })
         }
     }

@@ -1,43 +1,25 @@
 package com.covid.covimaps.data.repository.local
 
+import android.app.Activity
 import android.content.Context
-import android.util.Log
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+class SharedPreferenceManager(private val activity: Activity) {
 
-class DataStoreManager(private val context: Context, var isAgree: Boolean = false) {
-    
-    init {
-        Log.d(TAG, "initialized: ")
-        isAgreedToDisclaimer()
-    }
+    private val sharedPreference = activity.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
 
     companion object {
-        const val TAG = "DataStoreManager"
-        val AGREE = booleanPreferencesKey("agree_to_disclaimer")
+        private const val TAG = "SharedPreferenceManager"
+        private const val FILE_NAME = "settings"
+        private val AGREE = "agree_to_disclaimer"
     }
 
-    fun isAgreedToDisclaimer() {
-        context.dataStore.data.map {
-            it[AGREE] ?: false
-            Log.d(TAG, "isAgreedToDisclaimer: ${it[AGREE]}")
-            isAgree = it[AGREE] ?: false
+    val isAgree: Boolean
+        get() = sharedPreference.getBoolean(AGREE, false)
+
+    fun agree() {
+        with(sharedPreference.edit()) {
+            putBoolean(AGREE, true)
+            apply()
         }
     }
-
-    suspend fun agreeToDisclaimer() =
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit {
-                it[AGREE] = true
-                isAgree = true
-            }
-        }
 }

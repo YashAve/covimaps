@@ -4,7 +4,6 @@ import android.content.Intent
 import android.media.AudioManager
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,10 +24,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,25 +36,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.lifecycleScope
-import com.covid.covimaps.data.repository.local.DataStoreManager
+import com.covid.covimaps.data.repository.local.SharedPreferenceManager
 import com.covid.covimaps.ui.composable.DisclaimerDialog
 import com.covid.covimaps.ui.theme.CoviMapsTheme
 import com.covid.covimaps.ui.theme.GoogleFonts.shadowsIntoLightFamily
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.Locale
 
 private const val TAG = "ProfileActivity"
 
 private lateinit var onSurvey: () -> Unit
 private lateinit var onStatistics: () -> Unit
+private lateinit var sharedPreferenceManager: SharedPreferenceManager
 
 class ProfileActivity : ComponentActivity() {
-
-    private val dataStoreManager by lazy {
-        DataStoreManager(context = baseContext)
-    }
 
     private var textToSpeech: TextToSpeech? = null
 
@@ -74,11 +66,6 @@ class ProfileActivity : ComponentActivity() {
                         if (!isInPreview()) {
                             handleTextToSpeech(enabled, text)
                         }
-                    },
-                    agreeToDisclaimer = {
-                        lifecycleScope.launch {
-                            dataStoreManager.agreeToDisclaimer()
-                        }
                     }
                 )
             }
@@ -86,6 +73,7 @@ class ProfileActivity : ComponentActivity() {
     }
 
     private fun init() {
+        sharedPreferenceManager = SharedPreferenceManager(this)
         onSurvey = {
             val intent = Intent(this, SurveyActivity::class.java)
             startActivity(intent)
@@ -110,7 +98,8 @@ class ProfileActivity : ComponentActivity() {
     private fun handleTextToSpeech(enabled: Boolean, text: String) {
         textToSpeech?.let {
             if (!enabled) {
-                val audioManager = applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
+                val audioManager =
+                    applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
                 val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
                 audioManager.setStreamVolume(
                     AudioManager.STREAM_MUSIC,
@@ -126,7 +115,8 @@ class ProfileActivity : ComponentActivity() {
                     null
                 )
             } else {
-                if (it.isSpeaking) it.stop() else {}
+                if (it.isSpeaking) it.stop() else {
+                }
             }
         }
     }
@@ -150,17 +140,16 @@ class ProfileActivity : ComponentActivity() {
 fun Profile(
     modifier: Modifier = Modifier,
     onFinish: () -> Unit = {},
-    readOutLoud: (Boolean, String) -> Unit = { _, _ -> },
-    agreeToDisclaimer: () -> Unit = {}
+    readOutLoud: (Boolean, String) -> Unit = { _, _ -> }
 ) {
-    val scope = rememberCoroutineScope()
-    var disclaimer by rememberSaveable { mutableStateOf(false) }
+    var agree by rememberSaveable { mutableStateOf(true) }
+    var check by rememberSaveable { mutableIntStateOf(0) }
 
-    LaunchedEffect(Unit) {
-        scope.launch {
-            delay(2000)
-            Log.d(TAG, "Profile: checking disclaimer status $disclaimer")
-            disclaimer = true
+    val onClick: (Int) -> Unit = {
+        check = it
+        agree = sharedPreferenceManager.isAgree
+        if (agree) {
+            if (check == 0) onSurvey() else onStatistics()
         }
     }
 
@@ -190,27 +179,32 @@ fun Profile(
                 )
             }
         }) { scaffold ->
-            Box(modifier = Modifier
-                .padding(scaffold)
-                .fillMaxSize()) {
-                if (disclaimer) DisclaimerDialog(
+            Box(
+                modifier = Modifier
+                    .padding(scaffold)
+                    .fillMaxSize()
+            ) {
+                if (!agree) DisclaimerDialog(
                     readOutLoud = readOutLoud,
                     onAgree = {
-                        //agreeToDisclaimer()
-                        disclaimer = false
+                        sharedPreferenceManager.agree()
+                        agree = sharedPreferenceManager.isAgree
+                        if (check == 0) onSurvey() else onStatistics()
                     },
                     onDisagree = {
-                        disclaimer = false
+                        agree = true
                     }
                 )
-                Column(modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 30.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally) {
-                    OutlinedButton(onClick = { onSurvey() }) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 30.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    OutlinedButton(onClick = { onClick(0) }) {
                         Text(text = "Health Survey")
                     }
-                    FilledTonalButton(onClick = { onStatistics() }) {
+                    FilledTonalButton(onClick = { onClick(1) }) {
                         Text(text = "View Statistics")
                     }
                 }
