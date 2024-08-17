@@ -1,6 +1,7 @@
 package com.covid.covimaps.ui.activity
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -35,11 +36,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,6 +51,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.lifecycleScope
 import com.covid.covimaps.ui.composable.CustomCountryCode
 import com.covid.covimaps.ui.composable.Loader
 import com.covid.covimaps.ui.theme.CoviMapsTheme
@@ -59,8 +59,9 @@ import com.covid.covimaps.ui.theme.GoogleFonts
 import com.covid.covimaps.util.FirebaseManager
 import com.covid.covimaps.util.GooglePlayServicesManager
 import com.covid.covimaps.viewmodel.UserViewModel
+import com.google.i18n.phonenumbers.PhoneNumberUtil
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 
 private const val TAG = "LoginActivity"
 
@@ -73,12 +74,12 @@ private lateinit var startActivity: () -> Unit
 class LoginActivity : ComponentActivity() {
 
     private val viewModel: UserViewModel by viewModels()
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         init()
-        
+
         enableEdgeToEdge()
         setContent {
             CoviMapsTheme {
@@ -88,7 +89,7 @@ class LoginActivity : ComponentActivity() {
             }
         }
     }
-    
+
     private fun init() {
         /*lifecycleScope.launch {
             viewModel.getDetails()
@@ -101,6 +102,18 @@ class LoginActivity : ComponentActivity() {
         onFinish = { finish() }
         firebaseManager = FirebaseManager(this)
         googlePlayServicesManager = GooglePlayServicesManager(this)
+
+        val locale = resources.configuration.locales[0]
+        val phoneNumberUtil = PhoneNumberUtil.getInstance()
+        val phoneCode = phoneNumberUtil.getCountryCodeForRegion(locale.country)
+
+        viewModel.selectedCountry = locale.country
+        viewModel.selectedCountryCode = "+$phoneCode"
+        viewModel.selectedIso3Country = locale.isO3Country
+
+        lifecycleScope.launch {
+            viewModel.getDetails()
+        }
     }
 }
 
@@ -109,7 +122,7 @@ private fun Login(
     modifier: Modifier = Modifier,
     viewModel: UserViewModel? = null,
     resendOTP: (String) -> Unit = {},
-    showCountryCodes: (Boolean) -> Unit = {}
+    showCountryCodes: (Boolean) -> Unit = {},
 ) {
     var status by rememberSaveable { mutableIntStateOf(0) }
     var heading by rememberSaveable { mutableStateOf("Can we get your number, please?") }
@@ -121,6 +134,7 @@ private fun Login(
     var textFieldEnabled by rememberSaveable { mutableStateOf(false) }
     var enabled by rememberSaveable { mutableStateOf(false) }
     var isLoading by rememberSaveable { mutableStateOf(false) }
+    var locked by rememberSaveable { mutableStateOf(false) }
 
     val changeNumber = {
         number = ""
@@ -140,6 +154,7 @@ private fun Login(
     }
     val submitPhoneNumber: (String) -> Unit = {
         showAlertDialog = false
+        locked = true
         heading = "Verify your number"
         title = "Enter the code we've sent by text to $it."
         numberHeading = "Code"
@@ -148,9 +163,11 @@ private fun Login(
         firebaseManager.flag = false
         firebaseManager.sendOtp(it)
     }
+
     val submitOTP: () -> Unit = {
         startActivity()
     }
+
     val checks: List<(String) -> Boolean> = listOf({
         number = it
         it.length < 15
@@ -160,6 +177,12 @@ private fun Login(
     })
     val onLoading: (Boolean) -> Unit = {
         isLoading = it
+        locked = it
+        if (!it) {
+            number = "373737"
+            textFieldEnabled = false
+            startActivity()
+        }
     }
 
     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
@@ -197,7 +220,7 @@ private fun Login(
                         )
                         .alpha(if (enabled) 1f else 0.5f)
                         .clickable {
-                            if (enabled) {
+                            if (enabled && !locked) {
                                 when (status) {
                                     0 -> {
                                         showAlertDialog = true
@@ -252,7 +275,7 @@ private fun Login(
                             bottom = if (status == 1) 0.dp else 10.dp
                         )
                     )
-                    if (status == 1) {
+                    if (status == 1 && !locked) {
                         Text(
                             text = "Change number",
                             textDecoration = TextDecoration.Underline,
@@ -304,7 +327,7 @@ private fun Login(
                                             }
                                         },
                                         singleLine = true,
-                                        enabled = textFieldEnabled,
+                                        enabled = textFieldEnabled && !locked,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         modifier = Modifier.clickable {
                                             when (status) {
@@ -322,7 +345,7 @@ private fun Login(
             if (showAlertDialog) {
                 AlertDialog(title = { Text(text = "We need to verify your number") }, text = {
                     Text(
-                        text = "We need to make sure that $countryCode$number is your number."
+                        text = "We need to make sure that ${viewModel?.selectedCountryCode}$number is your number."
                     )
                 }, confirmButton = {
                     Text(
@@ -341,28 +364,13 @@ private fun Login(
 
 @Composable
 private fun Main(
-    viewModel: UserViewModel? = null
+    viewModel: UserViewModel? = null,
 ) {
     var show by rememberSaveable { mutableStateOf(false) }
-    var loading by rememberSaveable { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-
-    if (loading) {
-        Loader()
-        LaunchedEffect(Unit) {
-            Log.d(TAG, "Main: LaunchedEffect is called")
-            show = scope.async {
-                viewModel?.getDetails()
-                loading = false
-                Log.d(TAG, "Main: Launched effect is completed")
-                true
-            }.await()
-        }
-    }
 
     val showScreen: (Boolean) -> Unit = {
         Log.d(TAG, "Main: CountryCodeComposable show is $it")
-        if (it) loading = true else show = false
+        show = it
     }
 
     if (show) {
@@ -375,7 +383,7 @@ private fun Main(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun MainPreview() {
     CoviMapsTheme {

@@ -81,8 +81,6 @@ private val covid: CovidLocation = CovidLocation(
     covaxin = 20313
 )
 
-private lateinit var first: LatLng
-
 @Composable
 fun Statistics(
     viewModel: MainViewModel? = null,
@@ -107,7 +105,6 @@ fun Statistics(
         loading = scope.async {
             delay(3000)
             covidLocations = viewModel?.covidMap ?: mutableMapOf()
-            first = viewModel?.first!!
             false
         }.await()
     }
@@ -115,6 +112,7 @@ fun Statistics(
     LaunchedEffect(selectedIndex) {
         if (selectedIndex > 0) {
             specificIndex = selectedIndex
+            lastSelected = 1
             selectedOption = 1
             rotated = !rotated
             delay(100)
@@ -184,7 +182,6 @@ fun Statistics(
                                 .graphicsLayer {
                                     this.rotationY = rotationY
                                     cameraDistance = 12f * density
-                                    // Flip the back side content to prevent mirroring
                                     if (!frontVisible) {
                                         scaleX = -1f
                                     }
@@ -195,9 +192,8 @@ fun Statistics(
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (frontVisible) {
-                                    MapView(modifier = Modifier.fillMaxSize()) {
+                                    MapView(modifier = Modifier.fillMaxSize(), first = viewModel?.first!!) {
                                         selectedIndex = it
-                                        //selected = true
                                     }
                                 } else {
                                     ListView(
@@ -216,7 +212,7 @@ fun Statistics(
 }
 
 @Composable
-fun MapView(modifier: Modifier = Modifier, onClick: (Int) -> Unit = {}) {
+fun MapView(modifier: Modifier = Modifier, first: LatLng, onClick: (Int) -> Unit = {}) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
             first, 7f

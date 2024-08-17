@@ -19,5 +19,7 @@ enum class CovidSymptoms(val symptom: String) {
     EVER_TESTED("Have you tested positive for COVID-19 before?"),
     EXISTING_DISEASE("Do you have any pre-existing medical conditions?"),
     VACCINATED_OR_NOT("Have you been vaccinated against COVID-19?"),
-    EVER_TESTED_POSITIVE("Have you ever been tested positive?")
+    EVER_TESTED_POSITIVE("Have you ever been tested positive?"),
+    WHICH_VACCINATION("Which vaccination, you took?"),
+    WHICH_MEDICATION("Tell us about your medication?")
 }

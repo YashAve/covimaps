@@ -2,8 +2,8 @@ package com.covid.covimaps.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.covid.covimaps.data.model.room.CountryCodeUiState
-import com.covid.covimaps.data.repository.remote.CustomCountryCode
+import com.covid.covimaps.data.model.room.LocaleDetail
+import com.covid.covimaps.data.repository.local.CountryDetailsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import javax.inject.Inject
@@ -11,19 +11,21 @@ import javax.inject.Inject
 private const val TAG = "UserViewModel"
 
 @HiltViewModel
-class UserViewModel @Inject constructor(private val customCountryCode: CustomCountryCode) :
+class UserViewModel @Inject constructor(
+    private val countryDetailsRepository: CountryDetailsRepository,
+) :
     ViewModel() {
 
-    var selectedCountry = "IN"
-    var selectedCountryCode = "+91"
+    lateinit var selectedCountry: String
+    lateinit var selectedCountryCode: String
+    lateinit var selectedIso3Country: String
     var otp = ""
-    var countryCodeUiStates: MutableList<CountryCodeUiState> = mutableListOf()
-    var generated = false
+    var localDetails: MutableList<LocaleDetail> = mutableListOf()
 
     suspend fun getDetails() {
-        countryCodeUiStates = viewModelScope.async {
-            customCountryCode.populate()
-        }.await().distinct().sortedBy { it.country }.toMutableList()
-        generated = true
+        localDetails = viewModelScope.async {
+            countryDetailsRepository.retrieve()
+        }.await().distinct().sortedBy { it.displayName }.toMutableList()
+
     }
 }

@@ -6,6 +6,7 @@ import com.covid.covimaps.BuildConfig
 import com.covid.covimaps.data.model.local.CovidDataUiState
 import com.covid.covimaps.data.model.local.DistrictUiState
 import com.covid.covimaps.data.model.local.Stats
+import com.covid.covimaps.data.model.local.mockData
 import com.covid.covimaps.data.model.local.statesMapping
 import com.covid.covimaps.data.model.retrofit.APIService
 import com.covid.covimaps.data.model.room.CovidLocation
@@ -70,39 +71,43 @@ class CovidLocationsManager @Inject constructor(
         withContext(Dispatchers.IO) {
             val service = retrofitGeoCode.create(APIService::class.java)
             val requests: MutableList<Deferred<CovidLocation?>> = mutableListOf()
-            covidDataUiStates.subList(3, 5).forEach { state ->
-                state.districts.forEach {
-                    requests.add(async {
-                        var covidLocation: CovidLocation? = null
-                        try {
-                            val response = service.getGeocodeResponse(
-                                "${it.name},+${state.state}",
-                                BuildConfig.MAPS_API_KEY
-                            )
-                            val latitude = response.results[0].geometry.location.lat
-                            val longitude = response.results[0].geometry.location.lng
-                            it.coordinates = LatLng(latitude, longitude)
-                            covidLocation = CovidLocation(
-                                state = state.state,
-                                district = it.name,
-                                latitude = latitude,
-                                longitude = longitude,
-                                totalDeceased = state.total?.deceased ?: 0,
-                                totalRecovered = state.total?.recovered ?: 0,
-                                totalCovishields = state.total?.vaccinated1 ?: 0,
-                                totalCovaxin = state.total?.vaccinated2 ?: 0,
-                                deceased = it.stats["total"]?.deceased ?: 0,
-                                recovered = it.stats["total"]?.recovered ?: 0,
-                                covishields = it.stats["total"]?.vaccinated1 ?: 0,
-                                covaxin = it.stats["total"]?.vaccinated2 ?: 0
-                            )
-                            covidLocations.add(covidLocation)
-                            Log.d(TAG, "getCovidGeocode: $covidLocation")
-                        } catch (e: Exception) {
-                            Log.e(TAG, "getCovidGeocode: ${e.message}")
-                        }
-                        covidLocation
-                    })
+            if (covidDataUiStates.isEmpty()) {
+                covidLocations.addAll(mockData)
+            } else {
+                covidDataUiStates.subList(0, 1).forEach { state ->
+                    state.districts.forEach {
+                        requests.add(async {
+                            var covidLocation: CovidLocation? = null
+                            try {
+                                val response = service.getGeocodeResponse(
+                                    "${it.name},+${state.state}",
+                                    BuildConfig.MAPS_API_KEY
+                                )
+                                val latitude = response.results[0].geometry.location.lat
+                                val longitude = response.results[0].geometry.location.lng
+                                it.coordinates = LatLng(latitude, longitude)
+                                covidLocation = CovidLocation(
+                                    state = state.state,
+                                    district = it.name,
+                                    latitude = latitude,
+                                    longitude = longitude,
+                                    totalDeceased = state.total?.deceased ?: 0,
+                                    totalRecovered = state.total?.recovered ?: 0,
+                                    totalCovishields = state.total?.vaccinated1 ?: 0,
+                                    totalCovaxin = state.total?.vaccinated2 ?: 0,
+                                    deceased = it.stats["total"]?.deceased ?: 0,
+                                    recovered = it.stats["total"]?.recovered ?: 0,
+                                    covishields = it.stats["total"]?.vaccinated1 ?: 0,
+                                    covaxin = it.stats["total"]?.vaccinated2 ?: 0
+                                )
+                                covidLocations.add(covidLocation)
+                                Log.d(TAG, "getCovidGeocode: $covidLocation")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "getCovidGeocode: ${e.message}")
+                            }
+                            covidLocation
+                        })
+                    }
                 }
             }
             requests.awaitAll()

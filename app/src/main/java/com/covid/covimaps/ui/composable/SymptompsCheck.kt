@@ -78,16 +78,40 @@ fun HealthCheck(
     var enabled by rememberSaveable { mutableStateOf(false) }
     val opacity by rememberSaveable { mutableFloatStateOf(if (enabled) 1f else 0.5f) }
     var submit by rememberSaveable { mutableStateOf(false) }
+    var viewForm by rememberSaveable { mutableStateOf(false) }
 
     val padding = 17.dp
 
-    val onChange: (Boolean) -> Unit = {
-        Log.d(TAG, "HealthCheck: counter $counter with ${diseases[counter].symptom}")
-        if (counter < 9) {
-            if (it) counter++ else counter--
-            label = diseases[counter].name.replace("_", " ")
-            disease = diseases[counter].symptom
-            symptom = symptoms[counter]
+    val updateQuestion: () -> Unit = {
+        label = diseases[counter].name.replace("_", " ")
+        disease = diseases[counter].symptom
+        symptom = symptoms[counter]
+    }
+
+    val onChange: (Boolean) -> Unit = { isChecked ->
+        if (!viewForm) {
+            when {
+                !isChecked && counter == 9 -> {
+                    counter--
+                    readOutLoud(false, "")
+                    updateQuestion()
+                }
+
+                counter < 9 -> {
+                    if (isChecked) counter++ else counter--
+                    readOutLoud(false, "")
+                    updateQuestion()
+                }
+
+                else -> {
+                    counter++
+                    viewForm = true
+                }
+            }
+        } else if (!isChecked) {
+            counter--
+            updateQuestion()
+            viewForm = false
         }
     }
 
@@ -113,7 +137,8 @@ fun HealthCheck(
                         .align(Alignment.CenterStart)
                         .clickable {
                             survey = mutableMapOf()
-                            onFinish() }
+                            onFinish()
+                        }
                 )
                 Text(
                     text = "Health Survey",
@@ -128,12 +153,12 @@ fun HealthCheck(
         },
             bottomBar = {
                 Column(modifier = Modifier.padding(padding)) {
-                    if (counter < 10) Text(
+                    if (!viewForm) Text(
                         text = disease,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
-                    if (counter < 10) CustomCheckBox(question = disease)
+                    if (!viewForm) CustomCheckBox(question = disease)
                     Box(modifier = Modifier.fillMaxWidth()) {
                         if (counter > 0) ElevatedButton(
                             onClick = { onChange(false) },
@@ -149,7 +174,7 @@ fun HealthCheck(
                                 .alpha(opacity)
                         ) {
                             Text(
-                                text = if (counter < 10) "Next" else "Submit",
+                                text = if (!viewForm) "Next" else "Submit",
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -161,14 +186,15 @@ fun HealthCheck(
                     .padding(scaffold)
                     .fillMaxSize()
             ) {
-                if (counter < 10) DiseaseCard(
+                if (!viewForm) DiseaseCard(
                     modifier = Modifier
                         .padding(padding + 12.dp)
                         .align(Alignment.Center),
                     padding = padding,
                     label = label,
                     symptom = symptom,
-                    question = disease
+                    question = disease,
+                    micEnabled = false
                 ) else Form(
                     modifier = Modifier
                         .padding(padding + 12.dp)
@@ -184,9 +210,10 @@ fun DiseaseCard(
     padding: Dp,
     label: String,
     symptom: String,
-    question: String
+    question: String,
+    micEnabled: Boolean,
 ) {
-    var mikeEnabled by rememberSaveable { mutableStateOf(false) }
+    var mikeEnabled by rememberSaveable { mutableStateOf(micEnabled) }
 
     onChecked(question, survey[question] ?: "")
 
@@ -239,6 +266,7 @@ fun Form(
 
     val scrollState = rememberScrollState()
     var positive by rememberSaveable { mutableStateOf(false) }
+    var vaccinated by rememberSaveable { mutableStateOf(false) }
 
     Column {
         Column(modifier = modifier.verticalScroll(scrollState)) {
@@ -259,18 +287,27 @@ fun Form(
             }
             Text(text = questions[4].symptom)
             CustomCheckBox(
-                question = questions[4].symptom,
-                another = true
-            )
+                question = questions[4].symptom
+            ) {
+                vaccinated = it == "Yes"
+            }
+            if (vaccinated) {
+                Text(text = questions[6].symptom)
+                CustomCheckBox(
+                    question = questions[6].symptom,
+                    answers = arrayOf("Covishield", "Covaxin")
+                )
+            }
             Text(text = questions[5].symptom)
             CustomCheckBox(
-                question = questions[5].symptom,
-                another = false
-            )
+                question = questions[5].symptom
+            ) {
+                positive = it == "Yes"
+            }
             if (positive) {
                 Log.d(TAG, "Form: $survey")
                 Text(
-                    text = questions[5].symptom,
+                    text = questions[7].symptom,
                     fontSize = 15.sp
                 )
                 FlowRow(
@@ -288,51 +325,41 @@ fun Form(
 @Composable
 fun CustomCheckBox(
     question: String = "",
-    another: Boolean = false,
+    answers: Array<String> = arrayOf("Yes", "No"),
+    onVaccinated: (String) -> Unit = {},
 ) {
     var yes by rememberSaveable { mutableStateOf(false) }
     var no by rememberSaveable { mutableStateOf(false) }
-    var partially by rememberSaveable { mutableStateOf(false) }
-
-    yes = survey[question] == "Yes"
-    no = survey[question] == "No"
-    partially = survey[question] == "Partially"
+    yes = survey[question] == answers[0]
+    no = survey[question] == answers[1]
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 3.dp)
         ) {
-            Text(text = "Yes")
-            Checkbox(checked = yes, onCheckedChange = {
-                yes = it
-                no = false
-                if (another) partially = false
-                onChecked(question, "Yes")
-            })
-        }
-        if (another) Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 3.dp)
-        ) {
-            Text(text = "Partially")
-            Checkbox(checked = yes, onCheckedChange = {
-                partially = it
-                yes = false
-                no = false
-                onChecked(question, "Partially")
+            Text(text = answers[0])
+            Checkbox(checked = yes, onCheckedChange = { isChecked ->
+                yes = isChecked
+                if (isChecked) {
+                    no = false
+                    onChecked(question, answers[0])
+                    onVaccinated(answers[0])
+                }
             })
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 3.dp)
         ) {
-            Text(text = "No")
-            Checkbox(checked = no, onCheckedChange = {
-                no = it
-                yes = false
-                if (another) partially = false
-                onChecked(question, "No")
+            Text(text = answers[1])
+            Checkbox(checked = no, onCheckedChange = { isChecked ->
+                no = isChecked
+                if (isChecked) {
+                    yes = false
+                    onChecked(question, answers[1])
+                    onVaccinated(answers[1])
+                }
             })
         }
     }

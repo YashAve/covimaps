@@ -9,22 +9,21 @@ import androidx.room.Query
 interface CovidLocationDoa {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg covidLocations: CovidLocation)
-    @Query("SELECT * FROM covidlocation")
+    @Query("SELECT * FROM covid_location")
     fun getCovidLocations(): List<CovidLocation>
-    @Query("SELECT COUNT(*) FROM covidlocation")
+    @Query("SELECT COUNT(*) FROM covid_location")
     fun getCount(): Int
 }
 
 @Dao
-interface CountryDao {
+interface LocaleDetailDoa {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(vararg countries: Countries)
-    @Query("SELECT * from countries")
-    fun getCountryCodes() : List<Countries>
-    @Query("SELECT COUNT(*) FROM countries")
+    suspend fun insertAll(vararg localeDetail: LocaleDetail)
+    @Query("SELECT * FROM locale_detail")
+    fun getLocaleDetail(): List<LocaleDetail>
+    @Query("SELECT COUNT(*) FROM locale_detail")
     fun getCount(): Int
 }
-
 @Dao
 interface CountryAndCityDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
