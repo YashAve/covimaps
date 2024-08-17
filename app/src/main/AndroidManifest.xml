@@ -26,11 +26,11 @@
             android:exported="false"
             android:theme="@style/Theme.CoviMaps" />
         <activity
-            android:name=".ui.activity.ProfileActivity"
+            android:name=".ui.activity.StatisticsActivity"
             android:exported="false"
             android:theme="@style/Theme.CoviMaps" />
         <activity
-            android:name=".ui.activity.StatisticsActivity"
+            android:name=".ui.activity.ProfileActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
         <activity

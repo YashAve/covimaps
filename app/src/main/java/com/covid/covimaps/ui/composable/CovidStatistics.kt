@@ -1,5 +1,6 @@
 package com.covid.covimaps.ui.composable
 
+import android.app.Activity
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.util.Log
 import androidx.compose.animation.animateContentSize
@@ -22,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
-import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,6 +51,7 @@ import com.covid.covimaps.R
 import com.covid.covimaps.data.model.room.CovidLocation
 import com.covid.covimaps.ui.theme.CoviMapsTheme
 import com.covid.covimaps.ui.theme.GoogleFonts
+import com.covid.covimaps.util.hideSoftKeyBoard
 import com.covid.covimaps.viewmodel.MainViewModel
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -83,7 +85,6 @@ private lateinit var first: LatLng
 
 @Composable
 fun Statistics(
-    modifier: Modifier = Modifier,
     viewModel: MainViewModel? = null,
     onFinish: () -> Unit = {},
 ) {
@@ -91,18 +92,20 @@ fun Statistics(
     var loading by rememberSaveable { mutableStateOf(true) }
     var selectedOption by rememberSaveable { mutableIntStateOf(0) }
     var rotated by rememberSaveable { mutableStateOf(false) }
-    val rotationY by animateFloatAsState(targetValue = if (rotated) 180f else 0f)
+    val rotationY by animateFloatAsState(targetValue = if (rotated) 180f else 0f, label = "")
     val frontVisible = rotationY <= 90f || rotationY >= 270f
     val lazyListState = rememberLazyListState()
-    var selected by rememberSaveable { mutableStateOf(false) }
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
+    var lastSelected by rememberSaveable { mutableIntStateOf(selectedOption) }
+    var specificIndex by rememberSaveable { mutableIntStateOf(-1) }
+
+    var expanded by rememberSaveable { mutableStateOf(false) }
 
     val padding = 25.dp
 
     LaunchedEffect(Unit) {
         loading = scope.async {
-            delay(2000)
-            viewModel?.getLocations()
+            delay(3000)
             covidLocations = viewModel?.covidMap ?: mutableMapOf()
             first = viewModel?.first!!
             false
@@ -111,10 +114,12 @@ fun Statistics(
 
     LaunchedEffect(selectedIndex) {
         if (selectedIndex > 0) {
+            specificIndex = selectedIndex
             selectedOption = 1
             rotated = !rotated
             delay(100)
             lazyListState.scrollToItem(selectedIndex - 1)
+            expanded = true
         }
     }
 
@@ -144,22 +149,20 @@ fun Statistics(
                             ),
                             modifier = Modifier.align(Alignment.Center)
                         )
-                        if (selectedOption == 1) Icon(
-                            imageVector = Icons.Default.FilterAlt,
-                            contentDescription = "",
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        )
                     }
                 },
                 bottomBar = {
                     Box(modifier = Modifier.padding(padding)) {
-                        DynamicTabSelector(
+                        if (!loading) DynamicTabSelector(
                             tabs = listOf("Map", "List"),
                             selectedOption = selectedOption,
                             modifier = Modifier.padding(30.dp)
                         ) {
                             selectedOption = it
-                            rotated = !rotated
+                            if (lastSelected != selectedOption) {
+                                rotated = !rotated
+                            }
+                            lastSelected = selectedOption
                         }
                     }
                 }
@@ -199,7 +202,8 @@ fun Statistics(
                                 } else {
                                     ListView(
                                         modifier = Modifier.fillMaxSize(),
-                                        lazyListState = lazyListState
+                                        lazyListState = lazyListState,
+                                        specificIndex = if (selectedIndex > 0) specificIndex else -1
                                     )
                                 }
                             }
@@ -259,12 +263,15 @@ fun MapView(modifier: Modifier = Modifier, onClick: (Int) -> Unit = {}) {
 }
 
 @Composable
-fun ListView(modifier: Modifier = Modifier, lazyListState: LazyListState) {
-
+fun ListView(
+    modifier: Modifier = Modifier,
+    lazyListState: LazyListState,
+    specificIndex: Int = -1,
+) {
+    val context = LocalContext.current
+    val activity = context as Activity
     var filter by rememberSaveable { mutableStateOf("") }
-
     var shouldLoad by rememberSaveable { mutableStateOf(false) }
-
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -280,22 +287,34 @@ fun ListView(modifier: Modifier = Modifier, lazyListState: LazyListState) {
 
     if (shouldLoad) Column {
         SearchBar {
-            if (it != "") {
-                filter = it
-            }
+            filter = it
+            if (filter == "") activity.hideSoftKeyBoard()
         }
         LazyColumn(state = lazyListState, modifier = modifier) {
             items(
-                covidLocations.filter { onFiltering(it.value) }.toList()
+                covidLocations
+                    .filter {
+                        if (filter != "")
+                            onFiltering(it.value)
+                        else true
+                    }
+                    .toList()
                     .sortedBy { it.first }) { item ->
-                CardContent(covidLocation = item.second)
+                if (item.first != specificIndex) {
+                    CardContent(
+                        covidLocation = item.second
+                    )
+                } else CardContent(
+                    covidLocation = item.second,
+                    specificIndex = specificIndex
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CardContent(covidLocation: CovidLocation = covid) {
+private fun CardContent(covidLocation: CovidLocation = covid, specificIndex: Int = -1) {
     var selectedOption by rememberSaveable { mutableIntStateOf(0) }
     val information: Map<String, Int> = mapOf(
         "deceased" to if (selectedOption == 0) covidLocation.deceased else covidLocation.totalDeceased,
@@ -304,6 +323,11 @@ private fun CardContent(covidLocation: CovidLocation = covid) {
         "vaccinated from covaxin" to if (selectedOption == 0) covidLocation.covaxin else covidLocation.totalCovaxin
     )
     var expanded by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        delay(100)
+        expanded = specificIndex != -1
+    }
 
     ElevatedCard(modifier = Modifier.padding(5.dp)) {
         Row(
