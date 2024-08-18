@@ -23,3 +23,8 @@ enum class CovidSymptoms(val symptom: String) {
     WHICH_VACCINATION("Which vaccination, you took?"),
     WHICH_MEDICATION("Tell us about your medication?")
 }
+
+enum class General(val question: String) {
+    WHICH_COUNTRY("Which country do you come from?"),
+    WHICH_CITY("And which city are you from")
+}

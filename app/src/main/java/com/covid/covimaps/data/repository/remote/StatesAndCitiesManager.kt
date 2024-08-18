@@ -30,15 +30,15 @@ class StatesAndCitiesManager @Inject constructor(
 
     private suspend fun populate() {
         withContext(Dispatchers.IO) {
-            //if (localDatabase.countriesAndCitiesDao().getCount() == 0) {
-            val service = retrofitStatesAndCities.create(APIService::class.java)
-            try {
-                countries = service.getStatesAndCities()
-                save()
-            } catch (e: Exception) {
-                Log.d(TAG, "populate: ${e.message}")
+            if (localDatabase.countriesAndCitiesDao().getCount() == 0) {
+                val service = retrofitStatesAndCities.create(APIService::class.java)
+                try {
+                    countries = service.getStatesAndCities()
+                    save()
+                } catch (e: Exception) {
+                    Log.d(TAG, "populate: ${e.message}")
+                }
             }
-            //}
         }
     }
 
@@ -49,12 +49,10 @@ class StatesAndCitiesManager @Inject constructor(
             async {
                 countries?.let {
                     it.data.forEach { country ->
-                        if (country.country != "India") {
-                            country.cities.forEach { city ->
-                                countryAndCity =
-                                    CountryAndCity(city = city, country = country.country)
-                                cities.add(countryAndCity)
-                            }
+                        country.cities.forEach { city ->
+                            countryAndCity =
+                                CountryAndCity(city = city, country = country.country)
+                            cities.add(countryAndCity)
                         }
                     }
                 }
@@ -65,25 +63,4 @@ class StatesAndCitiesManager @Inject constructor(
             }.await()
         }
     }
-
-    private suspend fun insert(countryAndCity: CountryAndCity) {
-        withContext(Dispatchers.IO) {
-            Log.d(TAG, "insert: $countryAndCity")
-            localDatabase.countriesAndCitiesDao().insertAll(countryAndCity)
-        }
-    }
-
-    suspend fun getCountries() =
-        withContext(Dispatchers.IO) {
-            async {
-                localDatabase.countriesAndCitiesDao().getCountries()
-            }.await()
-        }
-
-    suspend fun getCities(country: String) =
-        withContext(Dispatchers.IO) {
-            async {
-                localDatabase.countriesAndCitiesDao().getCities(country)
-            }.await()
-        }
 }

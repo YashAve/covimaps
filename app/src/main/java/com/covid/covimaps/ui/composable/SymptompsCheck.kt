@@ -1,5 +1,6 @@
 package com.covid.covimaps.ui.composable
 
+import android.app.Activity
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -24,18 +27,22 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -51,9 +58,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.covid.covimaps.R
 import com.covid.covimaps.data.model.local.CovidSymptoms
+import com.covid.covimaps.data.model.local.General
 import com.covid.covimaps.data.model.local.Symptoms
 import com.covid.covimaps.ui.theme.DarkGreen
 import com.covid.covimaps.ui.theme.GoogleFonts
+import com.covid.covimaps.util.hideSoftKeyBoard
+import com.covid.covimaps.viewmodel.MainViewModel
 
 private const val TAG = "SymptomsCheck"
 private lateinit var speakOutLoad: (Boolean, String) -> Unit
@@ -63,10 +73,10 @@ private lateinit var onChecked: (String, String) -> Unit
 
 @Composable
 fun HealthCheck(
+    viewModel: MainViewModel? = null,
     readOutLoud: (Boolean, String) -> Unit = { _, _ -> },
     onFinish: () -> Unit = {},
 ) {
-
     val context = LocalContext.current
     val symptoms = context.resources.getStringArray(R.array.symptoms)
     val diseases = Symptoms.entries
@@ -76,8 +86,6 @@ fun HealthCheck(
     var disease by rememberSaveable { mutableStateOf(diseases[counter].symptom) }
     var symptom by rememberSaveable { mutableStateOf(symptoms[counter]) }
     var enabled by rememberSaveable { mutableStateOf(false) }
-    val opacity by rememberSaveable { mutableFloatStateOf(if (enabled) 1f else 0.5f) }
-    var submit by rememberSaveable { mutableStateOf(false) }
     var viewForm by rememberSaveable { mutableStateOf(false) }
 
     val padding = 17.dp
@@ -106,6 +114,7 @@ fun HealthCheck(
                 else -> {
                     counter++
                     viewForm = true
+                    enabled = false
                 }
             }
         } else if (!isChecked) {
@@ -130,57 +139,53 @@ fun HealthCheck(
                     .statusBarsPadding()
                     .fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBackIosNew,
+                Icon(imageVector = Icons.Default.ArrowBackIosNew,
                     contentDescription = "exit app",
                     modifier = Modifier
                         .align(Alignment.CenterStart)
                         .clickable {
                             survey = mutableMapOf()
                             onFinish()
-                        }
-                )
+                        })
                 Text(
-                    text = "Health Survey",
-                    style = TextStyle(
+                    text = "Health Survey", style = TextStyle(
                         fontFamily = GoogleFonts.shadowsIntoLightFamily,
                         fontSize = 30.sp,
                         fontWeight = FontWeight.Bold
-                    ),
-                    modifier = Modifier.align(Alignment.Center)
+                    ), modifier = Modifier.align(Alignment.Center)
                 )
+                Row(modifier = Modifier.align(Alignment.CenterEnd)) {
+                    Text(text = "${counter + 1}", fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "/11")
+                }
             }
-        },
-            bottomBar = {
-                Column(modifier = Modifier.padding(padding)) {
-                    if (!viewForm) Text(
-                        text = disease,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
-                    )
-                    if (!viewForm) CustomCheckBox(question = disease)
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        if (counter > 0) ElevatedButton(
-                            onClick = { onChange(false) },
-                            modifier = Modifier.align(Alignment.CenterStart)
-                        ) {
-                            Text(text = "Previous", fontWeight = FontWeight.Bold)
-                        }
-                        FilledTonalButton(
-                            onClick = { onChange(true) },
-                            enabled = enabled,
-                            modifier = Modifier
-                                .align(Alignment.CenterEnd)
-                                .alpha(opacity)
-                        ) {
-                            Text(
-                                text = if (!viewForm) "Next" else "Submit",
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+        }, bottomBar = {
+            Column(modifier = Modifier.padding(padding)) {
+                if (!viewForm) Text(
+                    text = disease, fontWeight = FontWeight.Bold, fontSize = 15.sp
+                )
+                if (!viewForm) CustomCheckBox(question = disease)
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    if (counter > 0) ElevatedButton(
+                        onClick = { onChange(false) },
+                        modifier = Modifier.align(Alignment.CenterStart)
+                    ) {
+                        Text(text = "Previous", fontWeight = FontWeight.Bold)
+                    }
+                    FilledTonalButton(
+                        onClick = { onChange(true) },
+                        enabled = enabled,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .alpha(if (enabled) 1f else 0.5f)
+                    ) {
+                        Text(
+                            text = if (!viewForm) "Next" else "Submit", fontWeight = FontWeight.Bold
+                        )
                     }
                 }
-            }) { scaffold ->
+            }
+        }) { scaffold ->
             Box(
                 modifier = Modifier
                     .padding(scaffold)
@@ -194,11 +199,14 @@ fun HealthCheck(
                     label = label,
                     symptom = symptom,
                     question = disease,
-                    micEnabled = false
+                    micEnabled = false,
+                    viewModel = viewModel
                 ) else Form(
-                    modifier = Modifier
-                        .padding(padding + 12.dp)
-                )
+                    modifier = Modifier.padding(padding + 12.dp), viewModel = viewModel
+                ) {
+                    Log.d(TAG, "HealthCheck: I was called with $it")
+                    enabled = it
+                }
             }
         }
     }
@@ -212,6 +220,7 @@ fun DiseaseCard(
     symptom: String,
     question: String,
     micEnabled: Boolean,
+    viewModel: MainViewModel? = null,
 ) {
     var mikeEnabled by rememberSaveable { mutableStateOf(micEnabled) }
 
@@ -223,8 +232,7 @@ fun DiseaseCard(
     }
 
     ElevatedCard(
-        modifier = modifier,
-        colors = CardDefaults.elevatedCardColors(containerColor = DarkGreen)
+        modifier = modifier, colors = CardDefaults.elevatedCardColors(containerColor = DarkGreen)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -239,16 +247,14 @@ fun DiseaseCard(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(7.dp)
                 )
-                Icon(
-                    imageVector = if (!mikeEnabled) Icons.Default.Mic else Icons.Default.MicOff,
+                Icon(imageVector = if (!mikeEnabled) Icons.Default.Mic else Icons.Default.MicOff,
                     contentDescription = "",
                     modifier = Modifier.clickable {
                         if (!mikeEnabled) {
                             speakOutLoad(false, symptom)
                             mikeEnabled = true
                         } else stop()
-                    }
-                )
+                    })
             }
             Text(text = symptom, fontSize = 17.sp)
         }
@@ -259,6 +265,8 @@ fun DiseaseCard(
 @Composable
 fun Form(
     modifier: Modifier = Modifier,
+    viewModel: MainViewModel? = null,
+    onFilled: (Boolean) -> Unit = {}
 ) {
     val questions = CovidSymptoms.entries
     val existingDiseases = LocalContext.current.resources.getStringArray(R.array.existing_diseases)
@@ -268,53 +276,124 @@ fun Form(
     var positive by rememberSaveable { mutableStateOf(false) }
     var vaccinated by rememberSaveable { mutableStateOf(false) }
 
+    var country by rememberSaveable { mutableStateOf("Select Country") }
+    var city by rememberSaveable { mutableStateOf("Select City") }
+
+    var conditions by rememberSaveable { mutableStateOf("") }
+    var medicines by rememberSaveable { mutableStateOf("") }
+
+    var first by rememberSaveable { mutableStateOf(false) }
+    var second by rememberSaveable { mutableStateOf(false) }
+    var third by rememberSaveable { mutableStateOf(false) }
+    var fourth by rememberSaveable { mutableStateOf(false) }
+    var fifth by rememberSaveable { mutableStateOf(false) }
+
+    val allFieldsFilled = remember {
+        derivedStateOf {
+            country != "Select Country" &&
+                    city != "Select City" &&
+                    first &&
+                    second &&
+                    third &&
+                    fourth &&
+                    fifth
+        }
+    }
+
+    LaunchedEffect(allFieldsFilled.value) {
+        if (allFieldsFilled.value) {
+            Log.d(TAG, "All non-conditional fields are filled!")
+            onFilled(true)
+        }
+    }
+
     Column {
         Column(modifier = modifier.verticalScroll(scrollState)) {
-            questions.subList(0, 3).forEach { question ->
+            questions.subList(0, 3).forEachIndexed { index, question ->
                 Text(text = question.symptom)
-                CustomCheckBox(question = question.symptom)
+                CustomCheckBox(question = question.symptom, viewForm = true) {
+                    survey[question.symptom] = it
+                    when (index) {
+                        0 -> {
+                            first =
+                                survey.containsKey(questions[0].symptom) && survey[questions[0].symptom] != ""
+                        }
+
+                        1 -> {
+                            second =
+                                survey.containsKey(questions[1].symptom) && survey[questions[1].symptom] != ""
+                        }
+
+                        else -> {
+                            third =
+                                survey.containsKey(questions[2].symptom) && survey[questions[2].symptom] != ""
+                        }
+                    }
+                }
             }
-            Text(
-                text = questions[3].symptom,
-                fontSize = 15.sp
-            )
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
+            Text(text = questions[3].symptom, fontSize = 15.sp)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 existingDiseases.forEach {
-                    CustomFilterChip(label = it)
+                    CustomFilterChip(label = it) { condition ->
+                        if (!conditions.contains(condition)) {
+                            conditions = conditions.plus("$condition,")
+                        }
+                    }
                 }
             }
             Text(text = questions[4].symptom)
-            CustomCheckBox(
-                question = questions[4].symptom
-            ) {
+            CustomCheckBox(question = questions[4].symptom, viewForm = true) {
                 vaccinated = it == "Yes"
+                survey[questions[4].symptom] = it
+                fourth =
+                    survey.containsKey(questions[4].symptom) && survey[questions[4].symptom] != ""
             }
             if (vaccinated) {
                 Text(text = questions[6].symptom)
                 CustomCheckBox(
                     question = questions[6].symptom,
-                    answers = arrayOf("Covishield", "Covaxin")
-                )
+                    answers = arrayOf("Covishield", "Covaxin"), viewForm = true
+                ) {
+                    survey[questions[6].symptom] = it
+                }
             }
             Text(text = questions[5].symptom)
-            CustomCheckBox(
-                question = questions[5].symptom
-            ) {
+            CustomCheckBox(question = questions[5].symptom, viewForm = true) {
                 positive = it == "Yes"
+                survey[questions[5].symptom] = it
+                fifth =
+                    survey.containsKey(questions[5].symptom) && survey[questions[5].symptom] != ""
             }
             if (positive) {
-                Log.d(TAG, "Form: $survey")
-                Text(
-                    text = questions[7].symptom,
-                    fontSize = 15.sp
-                )
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
+                Text(text = questions[7].symptom, fontSize = 15.sp)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     covidMedicines.forEach {
-                        CustomFilterChip(label = it)
+                        CustomFilterChip(label = it) { medicine ->
+                            if (!medicines.contains(medicine)) {
+                                medicines = medicines.plus("$medicine,")
+                            }
+                        }
+                    }
+                }
+            }
+            Text(text = General.WHICH_COUNTRY.question)
+            viewModel?.let {
+                OriginBox(
+                    label = country,
+                    viewModel = viewModel,
+                    selections = viewModel.countries
+                ) {
+                    country = it
+                    city = "Select City"
+                }
+                if (country != "Select Country") {
+                    Text(text = General.WHICH_CITY.question)
+                    OriginBox(
+                        label = city,
+                        viewModel = viewModel,
+                        selections = viewModel.cities[country]!!
+                    ) {
+                        city = it
                     }
                 }
             }
@@ -323,9 +402,100 @@ fun Form(
 }
 
 @Composable
+fun OriginBox(
+    modifier: Modifier = Modifier,
+    label: String,
+    viewModel: MainViewModel,
+    selections: MutableList<String>,
+    onSelect: (String) -> Unit = {},
+) {
+    var showSheet by rememberSaveable { mutableStateOf(false) }
+
+    ElevatedCard(modifier = modifier
+        .padding(vertical = 5.dp)
+        .clickable {
+            showSheet = true
+        }) {
+        Text(text = label, modifier = Modifier.padding(vertical = 7.dp, horizontal = 10.dp))
+    }
+
+    if (showSheet) CustomBottomSheet(
+        selections = selections,
+        show = showSheet,
+        onSelect = onSelect,
+    ) {
+        showSheet = it
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomBottomSheet(
+    modifier: Modifier = Modifier,
+    selections: MutableList<String>,
+    show: Boolean,
+    onSelect: (String) -> Unit = {},
+    onDismiss: (Boolean) -> Unit = {},
+) {
+    val context = LocalContext.current
+    val activity = context as Activity
+    var showSheet by rememberSaveable { mutableStateOf(show) }
+    var filter by rememberSaveable { mutableStateOf("") }
+
+    val onFiltering: (String) -> Boolean = {
+        it.lowercase().startsWith(filter.lowercase())
+    }
+
+    ModalBottomSheet(onDismissRequest = {
+        showSheet = false
+        onDismiss(false)
+    }) {
+        Column(modifier = modifier.padding(23.dp)) {
+            SearchBar(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                filter = it
+                if (filter == "") activity.hideSoftKeyBoard()
+            }
+            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                items(selections.filter {
+                    if (filter != "") onFiltering(it)
+                    else true
+                }.toList().sortedBy { it }) {
+                    SheetContentListItem(
+                        selectable = it, onSelect = onSelect, onDismiss = onDismiss
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SheetContentListItem(
+    modifier: Modifier = Modifier,
+    selectable: String,
+    onSelect: (String) -> Unit = {},
+    onDismiss: (Boolean) -> Unit = {},
+) {
+    ElevatedCard(modifier = modifier
+        .fillMaxWidth()
+        .padding(3.dp)
+        .clickable {
+            onSelect(selectable)
+            onDismiss(false)
+        }) {
+        Text(
+            text = selectable,
+            fontSize = 17.sp,
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 10.dp)
+        )
+    }
+}
+
+@Composable
 fun CustomCheckBox(
     question: String = "",
     answers: Array<String> = arrayOf("Yes", "No"),
+    viewForm: Boolean = false,
     onVaccinated: (String) -> Unit = {},
 ) {
     var yes by rememberSaveable { mutableStateOf(false) }
@@ -343,7 +513,7 @@ fun CustomCheckBox(
                 yes = isChecked
                 if (isChecked) {
                     no = false
-                    onChecked(question, answers[0])
+                    if (!viewForm) onChecked(question, answers[0])
                     onVaccinated(answers[0])
                 }
             })
@@ -357,7 +527,7 @@ fun CustomCheckBox(
                 no = isChecked
                 if (isChecked) {
                     yes = false
-                    onChecked(question, answers[1])
+                    if (!viewForm) onChecked(question, answers[1])
                     onVaccinated(answers[1])
                 }
             })
@@ -368,16 +538,15 @@ fun CustomCheckBox(
 @Composable
 fun CustomFilterChip(
     label: String,
+    onSelect: (String) -> Unit = {},
 ) {
     var selected by rememberSaveable { mutableStateOf(false) }
-    FilterChip(
-        selected = selected,
-        onClick = { selected = !selected },
-        label = { Text(text = label) },
-        leadingIcon = {
-            if (selected) Icon(imageVector = Icons.Default.Check, contentDescription = "")
-        },
-        modifier = Modifier.wrapContentWidth()
+    FilterChip(selected = selected, onClick = {
+        selected = !selected
+        onSelect(label)
+    }, label = { Text(text = label) }, leadingIcon = {
+        if (selected) Icon(imageVector = Icons.Default.Check, contentDescription = "")
+    }, modifier = Modifier.wrapContentWidth()
     )
 }
 

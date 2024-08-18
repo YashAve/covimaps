@@ -23,27 +23,33 @@ class CountryDetailsRepository @Inject constructor(
         val phoneNumberUtil = PhoneNumberUtil.getInstance()
         val localeList = Locale.getAvailableLocales()
         coroutineScope {
-            async(Dispatchers.Default) {
-                Log.d(TAG, "populate: ${localeList.size}")
-                for (index in 0..localeList.size) {
-                    try {
-                        val locale = localeList[index]
-                        val phoneCode = "+${phoneNumberUtil.getCountryCodeForRegion(localeList[index].country)}"
-                        val localDetail = LocaleDetail(
-                            displayName = locale.displayCountry,
-                            country = locale.country,
-                            phoneNumberCode = phoneCode,
-                            flag = getCountryFlag(locale.isO3Country)
-                        )
-                        Log.d(TAG, "populate: $localDetail")
-                        localeDetails.add(localDetail)
-                    } catch (e: Exception) {
-                        continue
-                    }
-                }
-                localeDetails.removeIf { it.phoneNumberCode == "+0" }
-                save()
+            val size = async(Dispatchers.IO) {
+                localDatabase.localeDetailDao().getCount()
             }.await()
+            if (size == 0) {
+                async(Dispatchers.Default) {
+                    Log.d(TAG, "populate: ${localeList.size}")
+                    for (index in 0..localeList.size) {
+                        try {
+                            val locale = localeList[index]
+                            val phoneCode =
+                                "+${phoneNumberUtil.getCountryCodeForRegion(localeList[index].country)}"
+                            val localDetail = LocaleDetail(
+                                displayName = locale.displayCountry,
+                                country = locale.country,
+                                phoneNumberCode = phoneCode,
+                                flag = getCountryFlag(locale.isO3Country)
+                            )
+                            Log.d(TAG, "populate: $localDetail")
+                            localeDetails.add(localDetail)
+                        } catch (e: Exception) {
+                            continue
+                        }
+                    }
+                    localeDetails.removeIf { it.phoneNumberCode == "+0" }
+                    save()
+                }.await()
+            }
         }
     }
 
