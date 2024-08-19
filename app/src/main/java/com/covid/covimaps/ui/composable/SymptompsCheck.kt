@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedButton
@@ -43,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -64,8 +66,11 @@ import com.covid.covimaps.ui.theme.DarkGreen
 import com.covid.covimaps.ui.theme.GoogleFonts
 import com.covid.covimaps.util.hideSoftKeyBoard
 import com.covid.covimaps.viewmodel.MainViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 
 private const val TAG = "SymptomsCheck"
+
 private lateinit var speakOutLoad: (Boolean, String) -> Unit
 private var survey: MutableMap<String, String> = mutableMapOf()
 
@@ -81,16 +86,23 @@ fun HealthCheck(
     val symptoms = context.resources.getStringArray(R.array.symptoms)
     val diseases = Symptoms.entries
 
+    val scope = rememberCoroutineScope()
+
     var counter by rememberSaveable { mutableIntStateOf(0) }
     var label by rememberSaveable { mutableStateOf(diseases[counter].name.replace("_", " ")) }
     var disease by rememberSaveable { mutableStateOf(diseases[counter].symptom) }
     var symptom by rememberSaveable { mutableStateOf(symptoms[counter]) }
     var enabled by rememberSaveable { mutableStateOf(false) }
     var viewForm by rememberSaveable { mutableStateOf(false) }
+    var nextLabel by rememberSaveable { mutableStateOf("Next") }
+    var formFilled by rememberSaveable { mutableStateOf(false) }
+    var cancelled by rememberSaveable { mutableStateOf(false) }
+    var submitted by rememberSaveable { mutableStateOf(false) }
 
     val padding = 17.dp
 
     val updateQuestion: () -> Unit = {
+        nextLabel = "Next"
         label = diseases[counter].name.replace("_", " ")
         disease = diseases[counter].symptom
         symptom = symptoms[counter]
@@ -115,6 +127,7 @@ fun HealthCheck(
                     counter++
                     viewForm = true
                     enabled = false
+                    nextLabel = "Submit"
                 }
             }
         } else if (!isChecked) {
@@ -131,6 +144,15 @@ fun HealthCheck(
 
     speakOutLoad = readOutLoud
 
+    LaunchedEffect(submitted) {
+        if (submitted) {
+            scope.async(Dispatchers.Default) {
+                viewModel?.restructure()
+            }.await()
+            onFinish()
+        }
+    }
+
     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
         Scaffold(topBar = {
             Box(
@@ -145,10 +167,10 @@ fun HealthCheck(
                         .align(Alignment.CenterStart)
                         .clickable {
                             survey = mutableMapOf()
-                            onFinish()
+                            cancelled = true
                         })
                 Text(
-                    text = "Health Survey", style = TextStyle(
+                    text = "Covid Survey", style = TextStyle(
                         fontFamily = GoogleFonts.shadowsIntoLightFamily,
                         fontSize = 30.sp,
                         fontWeight = FontWeight.Bold
@@ -173,14 +195,60 @@ fun HealthCheck(
                         Text(text = "Previous", fontWeight = FontWeight.Bold)
                     }
                     FilledTonalButton(
-                        onClick = { onChange(true) },
+                        onClick = {
+                            if (nextLabel == "Next") {
+                                onChange(true)
+                            } else {
+                                formFilled = true
+                            }
+                        },
                         enabled = enabled,
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
                             .alpha(if (enabled) 1f else 0.5f)
                     ) {
                         Text(
-                            text = if (!viewForm) "Next" else "Submit", fontWeight = FontWeight.Bold
+                            text = nextLabel, fontWeight = FontWeight.Bold
+                        )
+                    }
+                    if (cancelled) {
+                        SurveyAlertDialog(
+                            title = "Sure about not taking the Survey",
+                            text = "No worries, you can take this survey any time",
+                            success = "Yes",
+                            failure = "Cancel",
+                            onSuccess = {
+                                viewModel?.survey = mutableMapOf()
+                                survey = mutableMapOf()
+                                onFinish()
+                            },
+                            onFailure = {
+                                cancelled = false
+                            },
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    if (formFilled) {
+                        SurveyAlertDialog(
+                            title = "Submit Health Survey",
+                            text = "Thank you for taking out time, this will help us in creating awareness about COVID-19",
+                            success = "Submit",
+                            failure = "Cancel",
+                            onSuccess = {
+                                viewModel?.survey = survey
+                                viewModel?.survey?.forEach { form ->
+                                    Log.d(
+                                        TAG,
+                                        "HealthCheck: key = ${form.key}, value = ${form.value}"
+                                    )
+                                }
+                                survey = mutableMapOf()
+                                submitted = true
+                            },
+                            onFailure = {
+                                formFilled = false
+                                submitted = false
+                            }
                         )
                     }
                 }
@@ -266,7 +334,7 @@ fun DiseaseCard(
 fun Form(
     modifier: Modifier = Modifier,
     viewModel: MainViewModel? = null,
-    onFilled: (Boolean) -> Unit = {}
+    onFilled: (Boolean) -> Unit = {},
 ) {
     val questions = CovidSymptoms.entries
     val existingDiseases = LocalContext.current.resources.getStringArray(R.array.existing_diseases)
@@ -290,13 +358,7 @@ fun Form(
 
     val allFieldsFilled = remember {
         derivedStateOf {
-            country != "Select Country" &&
-                    city != "Select City" &&
-                    first &&
-                    second &&
-                    third &&
-                    fourth &&
-                    fifth
+            country != "Select Country" && city != "Select City" && first && second && third && fourth && fifth
         }
     }
 
@@ -337,6 +399,7 @@ fun Form(
                     CustomFilterChip(label = it) { condition ->
                         if (!conditions.contains(condition)) {
                             conditions = conditions.plus("$condition,")
+                            survey["conditions"] = conditions
                         }
                     }
                 }
@@ -352,7 +415,8 @@ fun Form(
                 Text(text = questions[6].symptom)
                 CustomCheckBox(
                     question = questions[6].symptom,
-                    answers = arrayOf("Covishield", "Covaxin"), viewForm = true
+                    answers = arrayOf("Covishield", "Covaxin"),
+                    viewForm = true
                 ) {
                     survey[questions[6].symptom] = it
                 }
@@ -371,6 +435,7 @@ fun Form(
                         CustomFilterChip(label = it) { medicine ->
                             if (!medicines.contains(medicine)) {
                                 medicines = medicines.plus("$medicine,")
+                                survey["medicines"] = medicines
                             }
                         }
                     }
@@ -379,12 +444,11 @@ fun Form(
             Text(text = General.WHICH_COUNTRY.question)
             viewModel?.let {
                 OriginBox(
-                    label = country,
-                    viewModel = viewModel,
-                    selections = viewModel.countries
+                    label = country, viewModel = viewModel, selections = viewModel.countries
                 ) {
                     country = it
                     city = "Select City"
+                    survey["country"] = it
                 }
                 if (country != "Select Country") {
                     Text(text = General.WHICH_CITY.question)
@@ -394,6 +458,7 @@ fun Form(
                         selections = viewModel.cities[country]!!
                     ) {
                         city = it
+                        survey["city"] = it
                     }
                 }
             }
@@ -547,6 +612,40 @@ fun CustomFilterChip(
     }, label = { Text(text = label) }, leadingIcon = {
         if (selected) Icon(imageVector = Icons.Default.Check, contentDescription = "")
     }, modifier = Modifier.wrapContentWidth()
+    )
+}
+
+@Composable
+private fun SurveyAlertDialog(
+    modifier: Modifier = Modifier,
+    title: String,
+    text: String,
+    success: String,
+    failure: String,
+    onSuccess: () -> Unit = {},
+    onFailure: () -> Unit = {},
+) {
+    val widthModifier = Modifier.fillMaxWidth()
+    AlertDialog(
+        onDismissRequest = { onFailure() },
+        title = {
+            Text(
+                text = title,
+                fontSize = 30.sp,
+                textAlign = TextAlign.Center,
+                modifier = widthModifier
+            )
+        },
+        text = {
+            Text(text = text, textAlign = TextAlign.Center, modifier = widthModifier)
+        },
+        confirmButton = {
+            Text(text = success,
+                modifier = Modifier.clickable { onSuccess() })
+        },
+        dismissButton = {
+            Text(text = failure, modifier = Modifier.clickable { onFailure() })
+        }, modifier = modifier
     )
 }
 

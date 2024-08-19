@@ -7,6 +7,7 @@ import com.covid.covimaps.data.model.retrofit.GEOCODE_URL
 import com.covid.covimaps.data.model.room.LocalDatabase
 import com.covid.covimaps.data.repository.remote.STATES_AND_CITIES_BASE_URL
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -71,4 +72,8 @@ class AppModule {
     @Provides
     fun provideFirebaseAuth(): FirebaseAuth =
         FirebaseAuth.getInstance()
+
+    @Provides
+    fun provideFirebaseFirestore(): FirebaseFirestore =
+        FirebaseFirestore.getInstance()
 }

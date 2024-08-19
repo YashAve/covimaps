@@ -139,7 +139,7 @@ fun Statistics(
                                 .clickable { onFinish() }
                         )
                         Text(
-                            text = "Statistics",
+                            text = "Covid Statistics",
                             style = TextStyle(
                                 fontFamily = GoogleFonts.shadowsIntoLightFamily,
                                 fontSize = 30.sp,

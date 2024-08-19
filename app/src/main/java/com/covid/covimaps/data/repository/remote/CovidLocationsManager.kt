@@ -9,6 +9,7 @@ import com.covid.covimaps.data.model.local.Stats
 import com.covid.covimaps.data.model.local.mockData
 import com.covid.covimaps.data.model.local.statesMapping
 import com.covid.covimaps.data.model.retrofit.APIService
+import com.covid.covimaps.data.model.retrofit.CovidGeocodes
 import com.covid.covimaps.data.model.room.CovidLocation
 import com.covid.covimaps.data.model.room.LocalDatabase
 import com.covid.covimaps.di.CovidBaseUrl
@@ -65,6 +66,20 @@ class CovidLocationsManager @Inject constructor(
                 Log.e(TAG, "getCovidResponse: ${e.message}")
             }
         }
+    }
+
+    suspend fun getGeocode(country: String, city: String): CovidGeocodes? {
+        var geocodes: CovidGeocodes?
+        withContext(Dispatchers.IO) {
+            try {
+                val service = retrofitGeoCode.create(APIService::class.java)
+                geocodes = service.getGeocodeResponse("${city}+${country}", BuildConfig.MAPS_API_KEY)
+                Log.d(TAG, "getGeocode: $geocodes")
+            } catch (e: Exception) {
+                geocodes = null
+            }
+        }
+        return geocodes
     }
 
     private suspend fun getCovidGeocode() =

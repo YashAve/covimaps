@@ -70,7 +70,7 @@ data class CovidDataUiState(
 data class DistrictUiState(
     val name: String,
     val stats: Map<String, Stats>,
-    var coordinates: LatLng? = null
+    var coordinates: LatLng? = null,
 )
 
 data class Stats(
@@ -79,5 +79,18 @@ data class Stats(
     val recovered: Int = 0,
     val tested: Int = 0,
     val vaccinated1: Int = 0,
-    val vaccinated2: Int = 0
+    val vaccinated2: Int = 0,
 )
+
+data class FirebaseCovidUiState(
+    val country: String,
+    val city: String,
+    val vaccinated: Boolean = false,
+    val covishield: Int = 0,
+    val covaxin: Int = 0,
+    val recovered: Int = 0,
+    val latitude: Double,
+    val longitude: Double
+) {
+    constructor() : this("", "", false, 0, 0, 0, 0.0, 0.0)
+}

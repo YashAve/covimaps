@@ -52,6 +52,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
+import com.covid.covimaps.data.repository.local.SharedPreferenceManager
 import com.covid.covimaps.ui.composable.CustomCountryCode
 import com.covid.covimaps.ui.composable.Loader
 import com.covid.covimaps.ui.theme.CoviMapsTheme
@@ -69,11 +70,13 @@ private lateinit var firebaseManager: FirebaseManager
 private lateinit var googlePlayServicesManager: GooglePlayServicesManager
 private lateinit var onFinish: () -> Unit
 private lateinit var startActivity: () -> Unit
+private lateinit var savePhoneNumber: (String) -> Unit
 
 @AndroidEntryPoint
 class LoginActivity : ComponentActivity() {
 
     private val viewModel: UserViewModel by viewModels()
+    private lateinit var sharedPreferenceManager: SharedPreferenceManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,11 +97,27 @@ class LoginActivity : ComponentActivity() {
         /*lifecycleScope.launch {
             viewModel.getDetails()
         }*/
+        lifecycleScope.launch {
+            viewModel.getDetails()
+        }
+
+        onFinish = {
+            finish()
+        }
+
+        sharedPreferenceManager = SharedPreferenceManager(this)
         startActivity = {
             val intent = Intent(this, ProfileActivity::class.java)
             startActivity(intent)
             onFinish()
         }
+
+        Log.d(TAG, "init: ${sharedPreferenceManager.phoneNumber}")
+
+        if (sharedPreferenceManager.phoneNumber != "") {
+            startActivity()
+        }
+
         onFinish = { finish() }
         firebaseManager = FirebaseManager(this)
         googlePlayServicesManager = GooglePlayServicesManager(this)
@@ -111,8 +130,8 @@ class LoginActivity : ComponentActivity() {
         viewModel.selectedCountryCode = "+$phoneCode"
         viewModel.selectedIso3Country = locale.isO3Country
 
-        lifecycleScope.launch {
-            viewModel.getDetails()
+        savePhoneNumber = {
+            sharedPreferenceManager.save(it)
         }
     }
 }
@@ -181,6 +200,8 @@ private fun Login(
         if (!it) {
             number = "373737"
             textFieldEnabled = false
+            Log.d(TAG, "Login: phone number ${viewModel?.selectedCountryCode}$number")
+            savePhoneNumber("${viewModel?.selectedCountryCode}$number")
             startActivity()
         }
     }
@@ -291,7 +312,8 @@ private fun Login(
                         if (status == 0) {
                             Column {
                                 Text(text = "Country")
-                                OutlinedCard(modifier = Modifier.clickable { showCountryCodes(true) }) {
+                                OutlinedCard(modifier = Modifier.clickable {
+                                }) {
                                     Box(modifier = Modifier, contentAlignment = Alignment.Center) {
                                         Row(
                                             modifier = Modifier.padding(10.dp),
